@@ -85,6 +85,9 @@ void AM2322::measuring()
  next_measuring_=millis()+MEASURING_DELAY_MS;
  //-----wake up sensor------------------------------------------
  Wire.beginTransmission(i2cAddress);
+ Wire.endTransmission();
+ delay(1);
+ Wire.beginTransmission(i2cAddress);
  status=Wire.endTransmission();
  if(status!=0) return; //{ tmp_=-999; hum_=-999; return; }
  //-----set function 03-----------------------------------------
