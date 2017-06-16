@@ -1,4 +1,4 @@
-//_____D1_class_DisplayKH.h___________________170412-170412_____
+//_____D1_class_Display0KH.h__________________170412-170616_____
 // Hardware: OLED Shield: SSD1306, 64x48 pixel, I2C
 // Uses fonts/font2_5x8.h
 // Uses Adafruit libs Adafruit_SSD1306-esp8266-64x48.zip and
@@ -6,16 +6,16 @@
 #ifndef D1_CLASS_DISPLAYKH_H
 #define D1_CLASS_DISPLAYKH_H
 #include <Wire.h>
-#include <Adafruit_SSD1306.h>
-#include <Adafruit_GFX.h>
+#include "libs/Adafruit_SSD1306.h"
+#include "libs/Adafruit_GFX.h"
 #include "fonts/font2_5x8.h"
 #ifndef OLED_RESET
  #define OLED_RESET D3            // OLED_RESET=D3=GPIO0
 #endif
 
-class DisplayKH : public Adafruit_SSD1306 {
+class Display0KH : public Adafruit_SSD1306 {
 public:
- DisplayKH();
+ Display0KH();
  void screen6 (int line_, String text_, char align_, bool cls_);
  void screen6i(int line_, String text_, char align_, bool cls_);
  void screen5 (int line_, String text_, char align_, bool cls_);
@@ -37,7 +37,7 @@ private:
 };
 
 //_____constructor______________________________________________
-DisplayKH::DisplayKH() {
+Display0KH::Display0KH() {
  Adafruit_SSD1306(OLED_RESET);
  this->begin(SSD1306_SWITCHCAPVCC, 0x3C);   //I2C addr 0x3C
  this->clearDisplay();                      //Clear display-buff
@@ -53,7 +53,7 @@ DisplayKH::DisplayKH() {
 
 //_____display: 1 area, 6 lines, 10 chars/line, no border_______
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
-void DisplayKH::screen6(int line_, String text_, 
+void Display0KH::screen6(int line_, String text_, 
   char align_='l', bool cls_=false)
 {
  scr6(line_, text_, align_, cls_, false);
@@ -62,7 +62,7 @@ void DisplayKH::screen6(int line_, String text_,
 //_____display: 1 area, 6 lines, 10 chars/line, no border_______
 // first line inverted
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
-void DisplayKH::screen6i(int line_, String text_, 
+void Display0KH::screen6i(int line_, String text_, 
   char align_='l', bool cls_=false)
 {
  scr6(line_, text_, align_, cls_, true);
@@ -70,7 +70,7 @@ void DisplayKH::screen6i(int line_, String text_,
 
 //_____display: 1 area, 5 lines, 10 chars/line, border__________
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
-void DisplayKH::screen5(int line_, String text_, 
+void Display0KH::screen5(int line_, String text_, 
   char align_='l', bool cls_=false)
 {
  scr5(line_, text_, align_, cls_, false);
@@ -78,7 +78,7 @@ void DisplayKH::screen5(int line_, String text_,
 
 //_____display: 1 area, 5 lines, 10 chars/line, border__________
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
-void DisplayKH::screen5i(int line_, String text_, 
+void Display0KH::screen5i(int line_, String text_, 
   char align_='l', bool cls_=false)
 {
  scr5(line_, text_, align_, cls_, true);
@@ -86,7 +86,7 @@ void DisplayKH::screen5i(int line_, String text_,
 
 //_____display: 1 area, 4 lines, 10 chars/line, border__________
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
-void DisplayKH::screen4(int line_, String text_, 
+void Display0KH::screen4(int line_, String text_, 
   char align_='l', bool cls_=false)
 {
  scr4(line_, text_, align_, cls_, false);
@@ -94,7 +94,7 @@ void DisplayKH::screen4(int line_, String text_,
 
 //_____display: 1 area, 4 lines, 10 chars/line, border__________
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
-void DisplayKH::screen4i(int line_, String text_, 
+void Display0KH::screen4i(int line_, String text_, 
   char align_='l', bool cls_=false)
 {
  scr4(line_, text_, align_, cls_, true);
@@ -103,7 +103,7 @@ void DisplayKH::screen4i(int line_, String text_,
 //_____display: 3 areas, 5 lines, 10 chars/line, borders________
 // border around area 1 and 2
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
-void DisplayKH::screen221(int line_, String text_, 
+void Display0KH::screen221(int line_, String text_, 
   char align_='l', bool cls_=false)
 {
  int dx=0;
@@ -161,7 +161,7 @@ void DisplayKH::screen221(int line_, String text_,
 //_____display: 1 area, 4 lines, 10 chars/line, border__________
 // line 1 and 3 inverted
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
-void DisplayKH::screen4ii(int line_, String text_, 
+void Display0KH::screen4ii(int line_, String text_, 
   char align_='c', bool cls_=false)
 {
  int dx=0;
@@ -225,7 +225,7 @@ void DisplayKH::screen4ii(int line_, String text_,
 //_____display: 2 areas, 1+2 lines, 5/10 chars/line, border_____
 // area 1: double text size
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
-void DisplayKH::screen12(int line_, String text_, 
+void Display0KH::screen12(int line_, String text_, 
   char align_='c', bool cls_=false)
 {
  int dx=0;
@@ -270,7 +270,7 @@ void DisplayKH::screen12(int line_, String text_,
 
 //_____display: 2 areas: 1/3 lines, 5/10 chars/line_____________
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
-void DisplayKH::screen13(int line_, String text_, 
+void Display0KH::screen13(int line_, String text_, 
   char align_='c', bool cls_=false)
 {
  int dx=0;
@@ -324,7 +324,7 @@ void DisplayKH::screen13(int line_, String text_,
 //_____display: 3 areas, 1+1+2 lines, 10/5/10 chars/line________
 // area 1: inverted, area 2: double text size
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
-void DisplayKH::screen112(int line_, String text_, 
+void Display0KH::screen112(int line_, String text_, 
   char align_='c', bool cls_=false)
 {
  int dx=0;
@@ -377,7 +377,7 @@ void DisplayKH::screen112(int line_, String text_,
 
 //_____display: 1 area, 2 lines, 5 chars/line, border___________
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
-void DisplayKH::screen2(int line_, String text_, 
+void Display0KH::screen2(int line_, String text_, 
   char align_='c', bool cls_=false)
 {
  int dx=0;
@@ -417,7 +417,7 @@ void DisplayKH::screen2(int line_, String text_,
 //**************************************************************
 
 //_____make string with max chars (add blank before/after)______
-String DisplayKH::mytrim(int max_, String txt_, char align_='l')
+String Display0KH::mytrim(int max_, String txt_, char align_='l')
 {
  String s=txt_;
  //-----add leading blanks, if align_ needs them----------------
@@ -441,7 +441,7 @@ String DisplayKH::mytrim(int max_, String txt_, char align_='l')
 //_____display: 1 area, 6 lines, 10 chars/line, no border_______
 // first line may be inverted
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
-void DisplayKH::scr6(int line_, String text_, 
+void Display0KH::scr6(int line_, String text_, 
   char align_, bool cls_, bool invert_)
 {
  int dx=0;
@@ -513,7 +513,7 @@ void DisplayKH::scr6(int line_, String text_,
 //_____display: 1 area, 5 lines, 10 chars/line, border__________
 // first line may be inverted
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
-void DisplayKH::scr5(int line_, String text_, 
+void Display0KH::scr5(int line_, String text_, 
   char align_, bool cls_, bool invert_)
 {
  int dx=0;
@@ -577,7 +577,7 @@ void DisplayKH::scr5(int line_, String text_,
 
 //_____display: 1 area, 4 lines, 10 chars/line, border__________
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
-void DisplayKH::scr4(int line_, String text_, 
+void Display0KH::scr4(int line_, String text_, 
   char align_, bool cls_, bool invert_)
 {
  int dx=0;

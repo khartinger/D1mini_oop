@@ -1,12 +1,12 @@
-//_____D1_oop02_oled_screen112.ino____________170411-170412_____
+//_____D1_oop02_oled_screen112.ino____________170411-170616_____
 // Display text on OLED shield using an easy to use extended
 //   display class for displaying text (11 different "screens")
 // Hardware: WeMos D1 Mini
 //           OLED Shield: SSD1306, 64x48 pixel, I2C
 //                        SCL GPIO5, SDA GPIO4, OLED_RESET GPIO0
-#include "D1_class_DisplayKH.h"
+#include "D1_class_Display0KH.h"
 #define OLED_RESET 0              // OLED_RESET=D3=GPIO0
-DisplayKH display_;
+Display0KH display_;
 
 void setup() {
  String deg_=String((char)247);
