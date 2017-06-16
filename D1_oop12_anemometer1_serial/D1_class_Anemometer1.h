@@ -1,4 +1,4 @@
-﻿//_____D1_class_Anemometer1.h_________________170430-170430_____
+﻿//_____D1_class_Anemometer1.h_________________170430-170616_____
 // D1 mini class for an anemometer that outputs impulses.
 // A PCF8583 counts these impulses and calculates wind speed
 //  (in km/h or m/s) when wind speed or wind average is read.
@@ -104,6 +104,7 @@ void Anemometer1::measuring()
  T_now=millis();
  if(T_now<next_measuring_) return;
  //-----get counter value and reset it--------------------------
+ if(status>0) setup();
  counter=pcf8583.getCounter();
  status=pcf8583.getStatus();
  if(status!=0) return;

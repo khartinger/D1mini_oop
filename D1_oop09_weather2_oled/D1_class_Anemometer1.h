@@ -104,6 +104,7 @@ void Anemometer1::measuring()
  T_now=millis();
  if(T_now<next_measuring_) return;
  //-----get counter value and reset it--------------------------
+ if(status>0) setup();
  counter=pcf8583.getCounter();
  status=pcf8583.getStatus();
  if(status!=0) return;

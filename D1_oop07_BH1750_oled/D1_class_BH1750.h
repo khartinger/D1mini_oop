@@ -1,8 +1,9 @@
-//_____D1_class_BH1750.h______________________170414-170414_____
+//_____D1_class_BH1750.h______________________170414-170611_____
 // D1 mini class for digital light sensor BH1750.
 // Default i2c address is 0x23 (other option 0x5C).
 #ifndef D1_CLASS_BH1750_H
 #define D1_CLASS_BH1750_H
+#define BH1750_ADDR        0x23        // 7-bit address
 #define MEASURING_DELAY_MS 500
 #include <Wire.h>
 
@@ -23,8 +24,8 @@ class BH1750 {
 
 };
 
-//_____constructor (default 0x5C)_______________________________
-BH1750::BH1750() { i2cAddress=0x23; setup(); }
+//_____constructor (default 0x23)_______________________________
+BH1750::BH1750() { i2cAddress=BH1750_ADDR; setup(); }
 
 //_____constructor with i2c Address_____________________________
 BH1750::BH1750(int i2c_address) {

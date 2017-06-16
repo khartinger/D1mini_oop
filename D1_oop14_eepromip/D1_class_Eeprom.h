@@ -1,4 +1,4 @@
-//_____D1_class_Eeprom.h____________________20170521-170521_____
+//_____D1_class_Eeprom.h____________________20170521-170603_____
 // D1 mini class for using the internal eeprom.
 #ifndef D1_CLASS_EEPROM_H
 #define D1_CLASS_EEPROM_H
@@ -33,10 +33,10 @@ class Eeprom {
   int readDouble(double *f1, uint32_t address=EEPROM_SIZE_MAX+1);
 };
 
-//_____constructor (default button is D3)_______________________
+//_____constructor (default eeprom size is 80)__________________
 Eeprom::Eeprom() { setup(EEPROM_SIZE); }
 
-//_____constructor with button number (=GPIO)___________________
+//_____constructor with eeprom size_____________________________
 Eeprom::Eeprom(uint32_t size1) { setup(size1); }
 
 //_____setup eeprom_____________________________________________

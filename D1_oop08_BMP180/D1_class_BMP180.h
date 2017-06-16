@@ -1,4 +1,4 @@
-﻿//_____D1_class_BMP180.h______________________170415-170415_____
+﻿//_____D1_class_BMP180.h______________________170415-170416_____
 // D1 mini class for temperature and humidity sensor BMP180.
 // BMP180: Pressure    300..1100hPa, 0,01hPa, 16..19bit
 //         Temperature -40�..+85�C, 0,1�, 16bit
@@ -194,7 +194,7 @@ void BMP180::measuring()
  //char result;
  double tu, a, pu, s, x, y, z;
  //-----was setup successful?-----------------------------------
- if((status&0x80)>0) setup();
+ if(status>0) setup();
  if(status!=0) return;
  //-----start temperature measuring-----------------------------
  data[0] = BMP180_REG_CONTROL;

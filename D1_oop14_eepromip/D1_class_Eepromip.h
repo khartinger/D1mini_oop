@@ -1,4 +1,4 @@
-//_____D1_class_Eepromip.h__________________20170601-170601_____
+//_____D1_class_Eepromip.h__________________20170601-170603_____
 // D1 mini class for using the internal eeprom.
 // This class extends class Eeprom with writing/reading 
 //   ip address.
@@ -15,10 +15,10 @@ class Eepromip : public Eeprom {
   int readIP(IPAddress *ip1, uint32_t address=EEPROM_SIZE_MAX+1);
 };
 
-//_____constructor (default button is D3)_______________________
+//_____constructor (default eeprom size is 80)__________________
 Eepromip::Eepromip() { }
 
-//_____constructor with button number (=GPIO)___________________
+//_____constructor with eeprom size_____________________________
 Eepromip::Eepromip(uint32_t size1):Eeprom(size1) { }
 
 //_____write a ip address to eeprom (4 bytes)___________________

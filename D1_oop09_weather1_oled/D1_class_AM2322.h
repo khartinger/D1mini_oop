@@ -1,11 +1,11 @@
-﻿//_____D1_class_AM2322.h______________________170413-170413_____
+﻿//_____D1_class_AM2322.h______________________170413-170611_____
 // D1 mini class for temperature and humidity sensor AM2322.
 // AM2322: Temperature -40°..+80°C, +-0,5°C/+-0,2°C, 16bit
 //         Humidity    0%..99,0%, +-3%/+-0,1%, 16bit
 // Default i2c address is 0x5C
 #ifndef D1_CLASS_AM2322_H
 #define D1_CLASS_AM2322_H
-#define AM2322_ADDR 0x5C          // 7-bit address
+#define AM2322_ADDR        0x5C        // 7-bit address
 #define MEASURING_DELAY_MS 500
 #include <Wire.h>
 
@@ -84,6 +84,9 @@ void AM2322::measuring()
  if(millis()<next_measuring_) return;
  next_measuring_=millis()+MEASURING_DELAY_MS;
  //-----wake up sensor------------------------------------------
+ Wire.beginTransmission(i2cAddress);
+ Wire.endTransmission();
+ delay(1);
  Wire.beginTransmission(i2cAddress);
  status=Wire.endTransmission();
  if(status!=0) return; //{ tmp_=-999; hum_=-999; return; }
