@@ -3,9 +3,9 @@
 // Hardware: WeMos D1 Mini
 //           OLED Shield: SSD1306, 64x48 pixel, I2C
 //                        SCL GPIO5, SDA GPIO4, OLED_RESET GPIO0
-#include "D1_class_DisplayKH.h"
+#include "D1_class_Display0KH.h"
 #define OLED_RESET 0              // OLED_RESET=D3=GPIO0
-DisplayKH display_;
+Display0KH display_;
 String X=String((char)177);       // super test char
 
 void setup() {

@@ -1,5 +1,5 @@
-# D1_oop02_oled_screen112 
-This example shows the use of class __Display0KH__ to write text on OLED shield. The class extends the class Adafruit_SSD1306, so you can use all commands from this class as well.
+# D1_oop02_oled1_testall 
+This example shows writing text on different screens on OLED shield using the class __Display0KH__ . The class extends the class Adafruit_SSD1306, so you can use all commands from this class as well.
 The used Adafruit files are in the directory /libs, so you need not search for the zip files.
 
 The 5x8 pixel font is located in /fonts. You can modify every character by using the OpenOffice Calc file myfont5x8.ods.
@@ -17,7 +17,18 @@ The 5x8 pixel font is located in /fonts. You can modify every character by using
 * WeMos D1 mini
 * OLED Shield: SSD1306, 64x48 pixel, I2C
 
-![D1mini with D1 OLED Shield](./images/D1_oled_screen112grad.png "D1mini with OLED Shield")
+![D1mini screen6](./images/D1_oled_screen6.png "D1mini screen6")
+![D1mini screen6i](./images/D1_oled_screen6i.png "D1mini screen6i")
+![D1mini screen5](./images/D1_oled_screen5.png "D1mini screen5")
+![D1mini screen5i](./images/D1_oled_screen5i.png "D1mini screen5i")
+![D1mini screen4](./images/D1_oled_screen4.png "D1mini screen4")
+![D1mini screen4i](./images/D1_oled_screen4i.png "D1mini screen4i")
+![D1mini screen4ii](./images/D1_oled_screen4ii.png "D1mini screen4ii")
+![D1mini screen221](./images/D1_oled_screen221.png "D1mini screen221")
+![D1mini screen112](./images/D1_oled_screen112.png "D1mini screen112")
+![D1mini screen13](./images/D1_oled_screen13.png "D1mini screen13")
+![D1mini screen12](./images/D1_oled_screen12.png "D1mini screen12")
+![D1mini screen2](./images/D1_oled_screen2.png "D1mini screen2")
 
 ## Class diagram
 Parameters
