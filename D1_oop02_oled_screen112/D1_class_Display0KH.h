@@ -6,8 +6,10 @@
 #ifndef D1_CLASS_DISPLAYKH_H
 #define D1_CLASS_DISPLAYKH_H
 #include <Wire.h>
-#include "libs/Adafruit_SSD1306.h"
-#include "libs/Adafruit_GFX.h"
+//#include <Adafruit_SSD1306.h>          // use with Adafruit-lib
+//#include <Adafruit_GFX.h>              // use with Adafruit-lib
+#include "libs/Adafruit_SSD1306.h"     // use with /libs
+#include "libs/Adafruit_GFX.h"         // use with /libs
 #include "fonts/font2_5x8.h"
 #ifndef OLED_RESET
  #define OLED_RESET D3            // OLED_RESET=D3=GPIO0
