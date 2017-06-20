@@ -38,9 +38,9 @@ screen names (examples)
 * screen4i .... 4 lines with normal chars, line 1 inverted
 * screen4ii ... 4 lines with normal chars, line 1 and 3 inverted
 
-| class Display0KH (extends Adafruit_SSD1306) |
-| ------------------------------------------- |
-| + Display0KH() <br> + void screen6 (int line_, String text_, char align_, bool cls_) <br> + void screen6i(int line_, String text_, char align_, bool cls_) <br> + void screen5 (int line_, String text_, char align_, bool cls_) <br> + void screen5i(int line_, String text_, char align_, bool cls_) <br> +  void screen4 (int line_, String text_, char align_, bool cls_) <br> + void screen4i(int line_, String text_, char align_, bool cls_) <br> + void screen4ii(int line_, String text_, char align_, bool cls_) <br> + void screen221(int line_, String text_, char align_, bool cls_) |
+| class DisplayKH (extends Adafruit_SSD1306) |
+| ------------------------------------------ |
+| + DisplayKH() <br> + void screen6 (int line_, String text_, char align_, bool cls_) <br> + void screen6i(int line_, String text_, char align_, bool cls_) <br> + void screen5 (int line_, String text_, char align_, bool cls_) <br> + void screen5i(int line_, String text_, char align_, bool cls_) <br> +  void screen4 (int line_, String text_, char align_, bool cls_) <br> + void screen4i(int line_, String text_, char align_, bool cls_) <br> + void screen4ii(int line_, String text_, char align_, bool cls_) <br> + void screen221(int line_, String text_, char align_, bool cls_) |
 | _screens with big character-lines_ |
 | + void screen112(int line_, String text_, char align_, bool cls_) <br> + void screen13(int line_, String text_, char align_, bool cls_) <br> + void screen12(int line_, String text_, char align_, bool cls_) <br> + void screen2 (int line_, String text_, char align_, bool cls_) |
 | - String mytrim(int max_, String txt_, char align) <br> - void scr6(int line_, String text_, char align_, bool cls_, bool invert_) <br> - void scr5(int line_, String text_, char align_, bool cls_, bool invert_) <br> - void scr4(int line_, String text_, char align_, bool cls_, bool invert_) |
