@@ -1,6 +1,6 @@
 //_____D1_oop03_oled_screen4.ino_____________170411-170412_____
-// Display text on OLED shield using an easy to unse extended
-//   display class for displaying text (11 different "screens")
+// Display text on OLED shield using an easy to use extended
+//   display class for displaying text (12 different "screens")
 //   "temperature" 20..40, increased by 0,1° every second
 //   "humidity"    double value of temperature
 // Hardware: WeMos D1 Mini
