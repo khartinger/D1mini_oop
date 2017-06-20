@@ -1,12 +1,20 @@
-//_____D1_class_DisplayKH.h___________________170412-170414_____
+//_____D1_class_DisplayKH.h___________________170412-170620_____
+// The class DisplayKH extends the class Adafruit_SSD1306,
+//  so you can use all commands from this class as well.
+// Additionally a 5x8 pixel font is included in this class.
+// The Adafruit-files in /libs are copied from the libs
+//  * Adafruit_SSD1306-esp8266-64x48.zip and
+//  * Adafruit-GFX-Library-1.1.5.zip
+// When using the Adafruit libs, delete the directory /libs !
+//
 // Hardware: OLED Shield: SSD1306, 64x48 pixel, I2C
-// Uses Adafruit libs Adafruit_SSD1306-esp8266-64x48.zip and
-//                    Adafruit-GFX-Library-1.1.5.zip
 #ifndef D1_CLASS_DISPLAYKH_H
 #define D1_CLASS_DISPLAYKH_H
 #include <Wire.h>
-#include <Adafruit_SSD1306.h>
-#include <Adafruit_GFX.h>
+//#include <Adafruit_SSD1306.h>          // use with Adafruit-lib
+//#include <Adafruit_GFX.h>              // use with Adafruit-lib
+#include "libs/Adafruit_SSD1306.h"     // use with /libs
+#include "libs/Adafruit_GFX.h"         // use with /libs
 #ifndef OLED_RESET
  #define OLED_RESET D3            // OLED_RESET=D3=GPIO0
 #endif
@@ -101,6 +109,66 @@ void DisplayKH::screen4i(int line_, String text_,
  scr4(line_, text_, align_, cls_, true);
 }
 
+//_____display: 1 area, 4 lines, 10 chars/line, border__________
+// line 1 and 3 inverted
+// align: l=left, c=center, r=right, L=left+overwrite, C, R...
+void DisplayKH::screen4ii(int line_, String text_, 
+  char align_='c', bool cls_=false)
+{
+ int dx=0;
+ int max_=10;
+ String s_=text_;
+ int len_=s_.length();
+ bool clr_=isLowerCase(align_);             //clear area before
+ align_=tolower(align_);                    //only lower chars
+ if(cls_) this->clearDisplay();             //clear buffer
+ //-----write text----------------------------------------------
+ switch(line_)
+ {
+  case 1: //-----area 1, line 1 or more-------------------------
+   if(align_=='c'){ if((len_<max_) &&((len_&1)>0)) dx=3; }
+   if(clr_) {
+    this->fillRect(1,1,62,10,WHITE);       //clear line 1
+   }
+   this->setCursor(dx+3,2);                //
+   this->setTextColor(BLACK,WHITE);
+   this->print(mytrim(max_, s_, align_));  //write text
+   this->setTextColor(WHITE,BLACK);
+   if(len_<=max_) break;
+   s_=s_.substring(max_);
+   len_=s_.length();
+  case 2: //-----area 1, line 2 or more-------------------------
+   if(align_=='c'){ if((len_<max_) &&((len_&1)>0)) dx=3; }
+   if(clr_)this->fillRect(1,11,62,12,BLACK);//clear line 2
+   this->setCursor(dx+3,13);                //
+   this->print(mytrim(max_, s_, align_));   //write text
+   if(len_<=max_) break;
+   s_=s_.substring(max_);
+   len_=s_.length();
+  case 3: //-----area 1, line 3 or more-------------------------
+   if(align_=='c'){ if((len_<max_) &&((len_&1)>0)) dx=3; }
+   if(clr_) {
+    this->fillRect(1,24,62,11,WHITE);      //clear line 1
+   }
+   this->setCursor(dx+3,26);               //
+   this->setTextColor(BLACK,WHITE);
+   this->print(mytrim(max_, s_, align_));  //write text
+   this->setTextColor(WHITE,BLACK);
+   if(len_<=max_) break;
+   s_=s_.substring(max_);
+   len_=s_.length();
+  case 4: //-----area 1, line 4 or more-------------------------
+   if(align_=='c'){ if((len_<max_) &&((len_&1)>0)) dx=3; }
+   if(clr_)this->fillRect(1,35,62,12,BLACK);//clear line 4
+   this->setCursor(dx+3,37);                //
+   this->print(mytrim(max_, s_, align_));   //write text
+   break;
+  default: break;
+ }
+ this->drawRect(0,0,64,48,WHITE);           // border
+ this->display();                           //show buffer
+}
+
 //_____display: 3 areas, 5 lines, 10 chars/line, borders________
 // border around area 1 and 2
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
@@ -163,49 +231,57 @@ void DisplayKH::screen221(int line_, String text_,
 // screens with single and double size lines
 //**************************************************************
 
-//_____display: 2 areas, 1+2 lines, 5/10 chars/line, border_____
-// area 1: double text size
+//_____display: 3 areas, 1+1+2 lines, 10/5/10 chars/line________
+// area 1: inverted, area 2: double text size
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
-void DisplayKH::screen12(int line_, String text_, 
+void DisplayKH::screen112(int line_, String text_, 
   char align_='c', bool cls_=false)
 {
  int dx=0;
  int max_=10;
  String s_=text_;
  int len_=s_.length();
- bool clr_=isLowerCase(align_);   // clear area before writing
+ bool clr_=isLowerCase(align_);   //clear area before writing
  align_=tolower(align_);
  if(cls_) this->clearDisplay();
  //-----write text----------------------------------------------
  switch(line_)
  {
-  case 1: //-----area 1, double text size-----------------------
+   case 1: //-----area 1, line 1, inverted----------------------
+   if(align_=='c'){ if((len_<max_) &&((len_&1)>0)) dx=3; }
+   if(clr_) this->fillRect(0,0,64,10,WHITE);//clear line 1
+   this->setCursor(dx+2,1);                 //
+   this->setTextColor(BLACK,WHITE);
+   this->print(mytrim(max_, s_, align_));   //write text
+   this->setTextColor(WHITE,BLACK);
+   break; 
+  case 2: //-----area 2, double text size-----------------------
    max_=5;
    if(align_=='c'){ if((len_<max_) &&((len_&1)==0)) dx=6; }
-   if(clr_) this->fillRect(1,1,62,27,BLACK);     //clear area 1 
-   this->setCursor(dx+3,7);
+   if(clr_)this->fillRect(1,10,62,19,BLACK);//clear area 2 
+   this->setCursor(dx+3,12);
    this->setTextSize(2);                    //charsize 10x16 pix
    this->println(mytrim(max_, text_, align_));   //write line 1  
    this->setTextSize(1);                    //charsize 5x8 pixel
    break;
-  case 2: //-----area 2, line 2 or more-------------------------
+  case 3: //-----area 3, line 1 or more-------------------------
    if(align_=='c'){ if((len_<max_) &&((len_&1)>0)) dx=3; }
-   if(clr_) this->fillRect(0,29,64,19,BLACK);//clear line 2
-   this->setCursor(dx,31);                   //
+   if(clr_)this->fillRect(0,29,64,11,BLACK);//clear line 3
+   this->setCursor(dx,31);                  //
    this->print(mytrim(max_, s_, align_));   //write text
    if(len_<=max_) break;
    s_=s_.substring(max_);
    len_=s_.length();
-   case 3: //-----area 2, line 3--------------------------------
+   case 4: //-----area 3, line 2--------------------------------
    if(align_=='c'){ if((len_<max_) &&((len_&1)>0)) dx=3; }
    if(clr_) this->fillRect(0,40,64,8,BLACK);//clear line 4
-   this->setCursor(dx,40);                   //
+   this->setCursor(dx,40);                  //
    this->print(mytrim(max_, s_, align_));   //write text
    break;  
   default: break;
  }
  //-----draw lines----------------------------------------------
- this->drawRect(0,0,64,29,WHITE);      // border around area 1
+ this->drawRect(0,0,64,30,WHITE);      // border around area 1
  this->display();                      // show buffer
 }
 
@@ -262,117 +338,49 @@ void DisplayKH::screen13(int line_, String text_,
  this->display();                      // show buffer
 }
 
-//_____display: 1 area, 4 lines, 10 chars/line, border__________
-// line 1 and 3 inverted
+//_____display: 2 areas, 1+2 lines, 5/10 chars/line, border_____
+// area 1: double text size
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
-void DisplayKH::screen4ii(int line_, String text_, 
+void DisplayKH::screen12(int line_, String text_, 
   char align_='c', bool cls_=false)
 {
  int dx=0;
  int max_=10;
  String s_=text_;
  int len_=s_.length();
- bool clr_=isLowerCase(align_);             //clear area before
- align_=tolower(align_);                    //only lower chars
- if(cls_) this->clearDisplay();             //clear buffer
- //-----write text----------------------------------------------
- switch(line_)
- {
-  case 1: //-----area 1, line 1 or more-------------------------
-   if(align_=='c'){ if((len_<max_) &&((len_&1)>0)) dx=3; }
-   if(clr_) {
-    this->fillRect(1,1,62,10,WHITE);       //clear line 1
-   }
-   this->setCursor(dx+3,2);                //
-   this->setTextColor(BLACK,WHITE);
-   this->print(mytrim(max_, s_, align_));  //write text
-   this->setTextColor(WHITE,BLACK);
-   if(len_<=max_) break;
-   s_=s_.substring(max_);
-   len_=s_.length();
-  case 2: //-----area 1, line 2 or more-------------------------
-   if(align_=='c'){ if((len_<max_) &&((len_&1)>0)) dx=3; }
-   if(clr_)this->fillRect(1,11,62,12,BLACK);//clear line 2
-   this->setCursor(dx+3,13);                //
-   this->print(mytrim(max_, s_, align_));   //write text
-   if(len_<=max_) break;
-   s_=s_.substring(max_);
-   len_=s_.length();
-  case 3: //-----area 1, line 3 or more-------------------------
-   if(align_=='c'){ if((len_<max_) &&((len_&1)>0)) dx=3; }
-   if(clr_) {
-    this->fillRect(1,24,62,11,WHITE);      //clear line 1
-   }
-   this->setCursor(dx+3,26);               //
-   this->setTextColor(BLACK,WHITE);
-   this->print(mytrim(max_, s_, align_));  //write text
-   this->setTextColor(WHITE,BLACK);
-   if(len_<=max_) break;
-   s_=s_.substring(max_);
-   len_=s_.length();
-  case 4: //-----area 1, line 4 or more-------------------------
-   if(align_=='c'){ if((len_<max_) &&((len_&1)>0)) dx=3; }
-   if(clr_)this->fillRect(1,35,62,12,BLACK);//clear line 4
-   this->setCursor(dx+3,37);                //
-   this->print(mytrim(max_, s_, align_));   //write text
-   break;
-  default: break;
- }
- this->drawRect(0,0,64,48,WHITE);           // border
- this->display();                           //show buffer
-}
-
-//_____display: 3 areas, 1+1+2 lines, 10/5/10 chars/line________
-// area 1: inverted, area 2: double text size
-// align: l=left, c=center, r=right, L=left+overwrite, C, R...
-void DisplayKH::screen112(int line_, String text_, 
-  char align_='c', bool cls_=false)
-{
- int dx=0;
- int max_=10;
- String s_=text_;
- int len_=s_.length();
- bool clr_=isLowerCase(align_);   //clear area before writing
+ bool clr_=isLowerCase(align_);   // clear area before writing
  align_=tolower(align_);
  if(cls_) this->clearDisplay();
  //-----write text----------------------------------------------
  switch(line_)
  {
-   case 1: //-----area 1, line 1, inverted----------------------
-   if(align_=='c'){ if((len_<max_) &&((len_&1)>0)) dx=3; }
-   if(clr_) this->fillRect(0,0,64,10,WHITE);//clear line 1
-   this->setCursor(dx+2,1);                 //
-   this->setTextColor(BLACK,WHITE);
-   this->print(mytrim(max_, s_, align_));   //write text
-   this->setTextColor(WHITE,BLACK);
-   break; 
-  case 2: //-----area 2, double text size-----------------------
+  case 1: //-----area 1, double text size-----------------------
    max_=5;
    if(align_=='c'){ if((len_<max_) &&((len_&1)==0)) dx=6; }
-   if(clr_)this->fillRect(1,10,62,19,BLACK);//clear area 2 
-   this->setCursor(dx+3,12);
+   if(clr_) this->fillRect(1,1,62,27,BLACK);     //clear area 1 
+   this->setCursor(dx+3,7);
    this->setTextSize(2);                    //charsize 10x16 pix
    this->println(mytrim(max_, text_, align_));   //write line 1  
    this->setTextSize(1);                    //charsize 5x8 pixel
    break;
-  case 3: //-----area 3, line 1 or more-------------------------
+  case 2: //-----area 2, line 2 or more-------------------------
    if(align_=='c'){ if((len_<max_) &&((len_&1)>0)) dx=3; }
-   if(clr_)this->fillRect(0,29,64,11,BLACK);//clear line 3
-   this->setCursor(dx,31);                  //
+   if(clr_) this->fillRect(0,29,64,19,BLACK);//clear line 2
+   this->setCursor(dx,31);                   //
    this->print(mytrim(max_, s_, align_));   //write text
    if(len_<=max_) break;
    s_=s_.substring(max_);
    len_=s_.length();
-   case 4: //-----area 3, line 2--------------------------------
+   case 3: //-----area 2, line 3--------------------------------
    if(align_=='c'){ if((len_<max_) &&((len_&1)>0)) dx=3; }
    if(clr_) this->fillRect(0,40,64,8,BLACK);//clear line 4
-   this->setCursor(dx,40);                  //
+   this->setCursor(dx,40);                   //
    this->print(mytrim(max_, s_, align_));   //write text
    break;  
   default: break;
  }
  //-----draw lines----------------------------------------------
- this->drawRect(0,0,64,30,WHITE);      // border around area 1
+ this->drawRect(0,0,64,29,WHITE);      // border around area 1
  this->display();                      // show buffer
 }
 
