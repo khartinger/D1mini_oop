@@ -20,7 +20,10 @@ Default WLAN values are defined at the beginning of file D1_class_BasicserverKH.
 #define DEFAULT_DHCP       false            // false=no dhcp
 #define HTTP_PORT          80               // 80=default for http
 ```
-After programming the D1 mini, default wlan values are stored in the EEPROM. On a reset/start the wlan values are read from eeprom. When pins Rx and Tx from the external serial line are connected on start (after reset or power on), you can change WLAN values calling the web page `/config`. Connecting Tx-Rx longer than 3sec sets WLAN data back to default values.
+After programming the D1 mini, default wlan values are stored in the EEPROM. On a reset/start the wlan values are read from eeprom.  
+When pins Rx and Tx from the external serial line are connected on start (after reset or power on), you can change WLAN values calling the web page `/config`. Connecting Tx-Rx longer than 3sec sets WLAN data back to default values.
+
+![D1mini Config web page](./images/D1_Webpage_Config.png "Config web page")
 
 The code line `server.setConfigWebPage(true);` in your program allows configuring by web page as well (no Tx-Rx connection needed on start).
 
