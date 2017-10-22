@@ -7,6 +7,9 @@ This sketch (programm) demonstrates the function of the self-made shield D1_Butt
 * **D1_Button5_LED78:** 2x LEDs at D7 (green), D8 (red), 1x Button at D5
 * **OLED Shield:** SSD1306, 64x48 pixel, I2C (SCL GPIO5, SDA GPIO4, OLED_RESET GPIO0)
 
+![D1_Button5_LED78_1a](./images/D1_Button5_LED78_1a.png "D1_Button5_LED78_1a")
+![D1_Button5_LED78_2a](./images/D1_Button5_LED78_2a.png "D1_Button5_LED78_2a")   
+
 ## Software
  The required Adafruit-files were copied from the zip-files
   * Adafruit_SSD1306-esp8266-64x48.zip and
