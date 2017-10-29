@@ -8,7 +8,8 @@ This sketch connects to a MQTT server, then:
 * After that, a message "counter" is published with the counter value.
 ## Hardware
 * WeMos D1 mini
-* OLED Shield: SSD1306, 64x48 pixel, I2C
+* OLED Shield: SSD1306, 64x48 pixel, I2C   
+![D1mini oled mqtt counter](./images/D1_OLED_mqtt1.png "D1mini with oled showing mqtt counter")
 ---
 
 ## How to make a D1mini mqtt application
