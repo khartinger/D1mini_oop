@@ -12,19 +12,18 @@
 // (2) 1-Button shield
 #include "D1_class_MqttClientKH.h"
 #include "D1_class_Din.h"
+#define  BUTTON_NAME              "button/02"
 Din button_(D3);
 MqttClientKH client("..ssid..", "..password..","mqttservername");
 
 //_____process all subscribed incoming messages_________________
 void callback(char* topic, byte* payload, unsigned int length)
 {
-//-----print message to Serial----------------------------------
+//-----convert topic and payload to String, print to Serial-----
  String sTopic=String(topic);
- Serial.print("Message received for topic ");
- Serial.print(sTopic);
- Serial.print(": ");
-  String sPayload="";
+ String sPayload="";
  for (int i=0; i<length; i++) sPayload+=(char)payload[i];
+ Serial.print("Message received for topic "+sTopic+"=");
  Serial.println(sPayload);
 }
 
@@ -33,8 +32,9 @@ void setup()
 {
  Serial.begin(9600); Serial.println("");
  //-----setup mqtt----------------------------------------------
- client.addSubscribe("button/02/#");
- client.addPublish("button/02", "-1");
+ client.setClientName(String(BUTTON_NAME));
+ client.addSubscribe(String(BUTTON_NAME)+"/#");
+ client.addPublish(String(BUTTON_NAME),"-1");
  client.setCallback(callback);
  client.reconnect();
 }
@@ -46,8 +46,8 @@ void loop()
  {
   if(button_.is_falling_edge())
   {
-   client.publish("button/02", "1", true);  // true=retain
-   Serial.println("\n-----button pressed!-----");
+   client.publish(BUTTON_NAME, "1", false);  // true=retain
+   Serial.println("\n************ button pressed! ************");
   }
  }
 }

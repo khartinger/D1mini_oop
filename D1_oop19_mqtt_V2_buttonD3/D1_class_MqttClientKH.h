@@ -1,4 +1,4 @@
-//_____D1_class_MqttClientKH.h________________170721-170721_____
+//_____D1_class_MqttClientKH.h________________170721-171029_____
 // The class MqttClient extends the class PubSubClient,
 //  so you can use all commands from this class as well.
 // When PubSubClient lib is installed, delete directory /libs !
@@ -28,29 +28,36 @@ class MqttClientKH : public PubSubClient {
   char pass_[PASS_SIZE+1];             // 
   char mqtt_[MQTT_SIZE+1];             // 
   int  port_;                          // mqtt port (def 1883)
-  String aTopicSub_[TOPIC_MAX];        //
-  String aTopicPub_[TOPIC_MAX];        //
+  String aTopicSub_[TOPIC_MAX];        // subscribed topics
+  String aTopicPub_[TOPIC_MAX];        // topics to publish
   String aPayloadPub_[TOPIC_MAX];      // value on (re)start
-  int numSub_;                         //
-  int numPub_;                         //
-  WiFiClient d1miniClient;             //
-  long millis_lastConnected;           //
+  bool   aRetainPub_[TOPIC_MAX];       // retain true|false
+  int    numSub_;                      // number subscribed topics
+  int    numPub_;                      // number topics to publish
+  WiFiClient d1miniClient;             // WLAN client for MQTT
+  String sClientName;                  // MQTT client name
+  long millis_lastConnected;           // last connection time [ms]
  public:
   MqttClientKH(char* ssid, char* pwd, char* mqtt_server, int port);
   int  getNumSub() { return numSub_; };
   int  getNumPub() { return numPub_; };
   void clrSubscribe() { numSub_=0; };
   void clrPublish() { numPub_=0; };
+  void setClientName(String sName) {sClientName=sName;};
+  String getClientName() { return sClientName; };
   //-----methods to setup WLAN and mqtt connection--------------
   bool setup_wifi();
   bool reconnect();
   bool isConnected();
+  bool sendPubSubTopics();
+  void printPubSubTopics2Serial(String clientId);
   //-----methods to define mqtt topics--------------------------
   bool addSubscribe(String topic);
   bool delSubscribe(String topic);
-  bool addPublish(String topic, String payload);
+  bool addPublish(String topic, String payload, bool retain);
+  bool delPublish(String topic);
   void publishString(String topic, String payload);
-  void publishString(String topic, String payload, bool retained);
+  void publishString(String topic, String payload, bool retain);
   //-----seldom used-------------------------------------------
   int  setSubscribe(String aTopicSub[], int num);
   int  setPublish(String aTopicPub[], String aPayload[], int num);
@@ -111,24 +118,13 @@ bool MqttClientKH::reconnect()
  if(!setup_wifi()) return false;
  //-----WiFi yes, mqtt no---------------------------------------
  if(DEBUG1)Serial.println("MQTT: Not connected - reconnect...");
- //-----Create a random client ID-------------------------------
- randomSeed(micros());            // start random numbers
- String clientId = "D1mini_Client-";
- clientId += String(random(0xffff), HEX);
- //-----Try to connect------------------------------------------
- if(connect(clientId.c_str())) 
+ //-----MQTT: try to send all PubSub topics---------------------
+ if(!sendPubSubTopics())
  {
-  if(DEBUG1) Serial.println(clientId+" connected.");
-  //-----Once connected, publish an announcement----------------
-  for(int i=0; i<numPub_; i++)
-   publishString(aTopicPub_[i], aPayloadPub_[i]);
-  //.....and resubscribe.......................................
-  for(int i=0; i<numSub_; i++)
-   subscribeString(aTopicSub_[i]);
-  return true;
+  if(DEBUG1)Serial.println("failed, client state rc="+String(state()));
+  return false;
  }
- if(DEBUG1)Serial.println("failed, client state rc="+String(state()));
- return false;
+ return true;
 }
 
 //_____is mqtt connection ok? (no: reconnect)___________________
@@ -151,6 +147,57 @@ bool MqttClientKH::isConnected()
   return true;
  }
  return false;
+}
+
+//-----MQTT: send all PubSub topics (e.g. on reconnect)---------
+bool MqttClientKH::sendPubSubTopics()
+{
+ //-----If no wifi ClientId: create a random client ID----------
+ String clientId=sClientName;
+ if(clientId=="")
+ {
+  randomSeed(micros());           // start random numbers
+  clientId = "D1mini_Client_";
+  clientId += String(random(0xffff), HEX);
+ }
+ //-----Try to connect------------------------------------------
+ if(connect(clientId.c_str()))
+ {
+  //-----Once connected, publish an announcement----------------
+  for(int i=0; i<numPub_; i++)
+  {
+   publishString(aTopicPub_[i], aPayloadPub_[i], aRetainPub_[i]);
+  }
+  //.....and resubscribe.......................................
+  for(int i=0; i<numSub_; i++)
+  {
+   subscribeString(aTopicSub_[i]);
+  }
+  if(DEBUG1) printPubSubTopics2Serial(clientId);
+  return true;
+ }
+ return false;
+}
+
+//-----send all PubSub topics to Serial-------------------------
+// just for test purpose
+void MqttClientKH::printPubSubTopics2Serial(String clientId="")
+{
+ if(clientId=="") clientId=sClientName;
+ Serial.println("====="+clientId+" connected======");
+ Serial.println("-----publish topic list ("+String(numPub_)+")-------");
+ for(int i=0; i<numPub_; i++)
+ {
+  Serial.print(aTopicPub_[i]+"="+aPayloadPub_[i]+", retain=");
+  if(aRetainPub_[i]) Serial.println("true");
+  else Serial.println("false");
+ }
+ Serial.println("-----subscribe topic list ("+String(numSub_)+")-----");
+ for(int i=0; i<numSub_; i++)
+ {
+  Serial.println(aTopicSub_[i]);
+ }
+ Serial.println("==============================");
 }
 
 //**************************************************************
@@ -185,11 +232,11 @@ bool MqttClientKH::delSubscribe(String topic)
   if(topic.equals(aTopicSub_[i])) break;
  }
  if(i>=numSub_) return false;
- i--;
+ //i--;
  //-----topic in array at index i, delete from array------------
+ numSub_--;
  for(int j=i; j<numSub_; j++)
   aTopicSub_[j]=aTopicSub_[j+1];
- numSub_--;
  //-----subscribe from broker-----------------------------------
  char cTopic[1+MESSAGE_MAXLEN];       // helper array
  topic.toCharArray(cTopic,MESSAGE_MAXLEN);
@@ -197,43 +244,70 @@ bool MqttClientKH::delSubscribe(String topic)
 }
 
 //_____add a (String) topic to publish array____________________
-bool MqttClientKH::addPublish(String topic, String payload)
+// if topic exists --> replace payload
+bool MqttClientKH::addPublish(String topic, String payload="", 
+     bool retain=true)
 {
  //-----is topic already in subscribe array?--------------------
  for(int i=0; i<numPub_; i++)
  {
-  if(topic.equals(aTopicPub_[i])) return true;
+  if(topic.equals(aTopicPub_[i]))
+  {
+   aPayloadPub_[i]=payload;
+   aRetainPub_[i]=retain;
+   return true;
+  }
  }
  //-----add topic (if enough space)-----------------------------
  if(numPub_<TOPIC_MAX)
  {
   aTopicPub_[numPub_]=topic;
   aPayloadPub_[numPub_]=payload;
+  aRetainPub_[numPub_]=retain;
   numPub_++;
   return true;
  }
  return false;
 }
 
-//_____convert String to array and publish ((without register)__
+//_____delete publish topic from list___________________________
+// return: true=deleted, false=not
+bool MqttClientKH::delPublish(String topic)
+{
+ //-----is topic in publish array?------------------------------
+ int i=0;
+ for(i=0; i<numPub_; i++)
+ {
+  if(topic.equals(aTopicPub_[i])) break;
+ }
+ if(i>=numPub_) return false;
+ numPub_--;
+ //-----topic in array at index i, delete from array------------
+ for(int j=i; j<numPub_; j++)
+ {
+  aTopicPub_[j]=aTopicPub_[j+1];
+  aPayloadPub_[j]=aPayloadPub_[j+1];
+ }
+}
+
+//_____convert String to array and publish (without register)___
 void MqttClientKH::publishString(String topic, String payload)
 {
- char top[1+MESSAGE_MAXLEN];          // helper array
- char msg[1+MESSAGE_MAXLEN];          // helper array
- topic.toCharArray(top,MESSAGE_MAXLEN);
- payload.toCharArray(msg,MESSAGE_MAXLEN);
- publish(top,msg);
+ publishString(topic, payload, false);
 }
 
 //_____convert String to array and publish______________________
 void MqttClientKH::publishString(
-  String topic, String payload, bool retained=false)
+  String topic, String payload, bool retain=false)
 {
+ //Serial.println("publishString: topic="+topic+", payload="+payload+", retain="+retain);
+ if(payload.length()<1) return;
  char top[1+MESSAGE_MAXLEN];          // helper array
  char msg[1+MESSAGE_MAXLEN];          // helper array
  topic.toCharArray(top,MESSAGE_MAXLEN);
  payload.toCharArray(msg,MESSAGE_MAXLEN);
- publish(top,msg,retained);
+ publish(top,msg,retain);
+ //Serial.println("publishString: published"); 
 }
 
 //_____set array of registered subscribe topics_________________
