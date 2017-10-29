@@ -53,20 +53,25 @@ __*Don't forget to change WiFi data to your network values!*__
 | + __MqttClientKH__(char* ssid, char* pwd, char* mqtt_server, int port) | default values: mqtt_server="localhost", port=1883  |
 | + int  getNumSub()    | get number of subscribed topics |
 | + int  getNumPub()    | get number of topics to publish |
-| + void clrSubscribe() | sets numSub_ to 0 |
-| + void clrPublish()   | sets numPub_ to 0 |
+| + void clrSubscribe() | set numSub_ to 0 |
+| + void clrPublish()   | set numPub_ to 0 |
+| + void setClientName(String sName) | set client name |
+| + String getClientName() | get client name |
 
 | --- *methods to setup WLAN and mqtt connection* --- |     |
 | --------------------------------------------------- | --- |
 | + bool setup_wifi()  | (try to) connect to the WiFi network, true on success. |
 | + bool reconnect()   | check for connect, if not: try to reconnect |
 | + bool __isConnected()__ | is mqtt connection ok? (no: reconnect after MQTT_RECONNECT_MS |
+| + bool sendPubSubTopics() | MQTT: send all PubSub topics to broker, called by reconnect() |
+| + void printPubSubTopics2Serial() | just for test purpose |
 
 | --- *methods to define mqtt topics* --- |     |
 | --------------------------------------- | --- |
-| + bool __addSubscribe__(String topic) | add a (String) topic to subscribe array |
+| + bool __addSubscribe__(String topic) | add a (String) topic to subscribe list (array) |
 | + bool __delSubscribe__(String topic) | convert String to array and unsubscribe |
-| + bool __addPublish__(String topic, String payload) | add a (String) topic to publish array |
+| + bool __addPublish__(String topic, String payload, bool retain) | add a (String) topic to publish list (array) |
+| + bool __delPublish__(String topic) | delet publish topic from list |
 | + void __publishString__(String topic, String payload) | convert String to array and publish (without register it) |
 | + void __publishString__(String topic, String payload, bool retained) | convert String to array and publish |
 | + int  setSubscribe(String aTopicSub[], int num) |set array of registered subscribe topics |
@@ -81,10 +86,12 @@ __*Don't forget to change WiFi data to your network values!*__
 | ~ int  port_ | mqtt port (default 1883) |
 | ~ String aTopicSub_[TOPIC_MAX] | array with all subscribed topics (TOPIC_MAX=8) |
 | ~ String aTopicPub_[TOPIC_MAX] | array with all topics to publish |
-| ~ String aPayloadPub_[TOPIC_MAX] | value on (re)start |
+| ~ String aPayloadPub_[TOPIC_MAX] | array with values on (re)connect network |
+| ~ bool   aRetainPub_[TOPIC_MAX]  | array with retain values (true|false) |
 | ~ int numSub_ | number of subscribed topics |
 | ~ int numPub_ | number of topics to publish |
-| ~ WiFiClient d1miniClient   |     |
-| ~ long millis_lastConnected |     |
+| ~ WiFiClient d1miniClient   | WLAN client for MQTT |
+| ~ String sClientName        | MQTT client name |
+| ~ long millis_lastConnected | last connection time in ms |
 
 More about class *PubSubClient* see https://github.com/knolleary/pubsubclient
