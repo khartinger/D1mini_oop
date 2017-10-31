@@ -1,9 +1,6 @@
-# Di mini: Simple MQTT example using class MqttClientKH
-(Sketch D1_oop19_mqtt_V2_buttonD3, Version 2017-10-29)
-
-The class **MqttClientKH** extends the class *PubSubClient* for an easy use of mqtt. So you can use all commands from class *PubSubClient* as well.   
-When library *PubSubClient* is installed in arduino IDE, delete directory `/libs` and change   
-`#include "libs/PubSubClient.h"` to `#include <PubSubClient.h>`.
+# Di mini: Button D3 as MQTT client
+Sketch: D1_oop19_mqtt_V2_buttonD3, Version 2017-10-31   
+[ <u>Deutsche Version</u> ](./LIESMICH.md "Deutsche Version")
 
 This sketch connects to a MQTT server via WLAN, then:
 * On Power-On a message "button/02" with payload -1 is sent.
@@ -13,11 +10,17 @@ This sketch connects to a MQTT server via WLAN, then:
 __*Don't forget to change WiFi data to your network values*__ in line   
 `MqttClientKH client("..ssid..", "..password..","mqtt server name");`  
 
-
 ## Hardware
 * WeMos D1 mini
 * 1-Button Shield D3   
 ![D1mini with 1-BUTTON Shield](./images/D1_1ButtonShield.png "D1mini with 1-BUTTON Shield")
+
+## Technical Info   
+
+The class **MqttClientKH** extends the class *PubSubClient* for easy use of mqtt. So you can also use all commands from class *PubSubClient*.   
+When library *PubSubClient* is installed in arduino IDE, delete files `PubSubClient.h` and `PubSubClient.cpp` in directory `/libs` and change   
+`#include "libs/PubSubClient.h"` to `#include <PubSubClient.h>`.   
+
 ---
 
 ## How to make a D1mini mqtt application
@@ -37,7 +40,7 @@ __*Don't forget to change WiFi data to your network values!*__
   `void callback(char* topic, byte* payload, unsigned int length)`  
 * in function setup() do mqtt setup:  
   `client.addSubscribe("topic");` subscribe topic (=input). Handle it in  callback()!  
-  `client.addPublish("topic", "startvalue");` publish massage by given topic  
+  `client.addPublish("topic", "startvalue");` publish message by given topic  
   `client.setCallback(callback);` set (name of) callback function  
   `client.reconnect();` connect to WLAN and mqtt server  
 * in function loop()  
@@ -58,20 +61,20 @@ __*Don't forget to change WiFi data to your network values!*__
 | --------------------------------------------------- | --- |
 | + bool setup_wifi()  | (try to) connect to the WiFi network, true on success. |
 | + bool reconnect()   | check for connect, if not: try to reconnect |
-| + bool __isConnected()__ | is mqtt connection ok? (no: reconnect after MQTT_RECONNECT_MS |
+| + bool __isConnected()__ | is mqtt connection ok? (no: reconnect after MQTT_RECONNECT_MS) |
 | + bool sendPubSubTopics() | MQTT: send all PubSub topics to broker, called by reconnect() |
-| + void printPubSubTopics2Serial() | just for test purpose |
+| + void printPubSubTopics2Serial() | just for testing purposes |
 
 | --- *methods to define mqtt topics* --- |     |
 | --------------------------------------- | --- |
 | + bool __addSubscribe__(String topic) | add a (String) topic to subscribe list (array) |
 | + bool __delSubscribe__(String topic) | convert String to array and unsubscribe |
 | + bool __addPublish__(String topic, String payload, bool retain) | add a (String) topic to publish list (array) |
-| + bool __delPublish__(String topic) | delet publish topic from list |
-| + void __publishString__(String topic, String payload) | convert String to array and publish (without register it) |
+| + bool __delPublish__(String topic) | delete publish topic from list |
+| + void __publishString__(String topic, String payload) | convert String to array and publish (without registering it) |
 | + void __publishString__(String topic, String payload, bool retained) | convert String to array and publish |
-| + int  setSubscribe(String aTopicSub[], int num) |set array of registered subscribe topics |
-| + int  setPublish(String aTopicPub[], String aPayload[], int num) | set array of subscribe topics to register |
+| + int  setSubscribe(String aTopicSub[], int num) | set array of registered subscribe topics |
+| + int  setPublish(String aTopicPub[], String aPayload[], int num) | set array of publish topics to register |
 | + void subscribeString(String topic) | convert String to array and subscribe |
 
 | --- *properties* --- |     |
@@ -83,7 +86,7 @@ __*Don't forget to change WiFi data to your network values!*__
 | ~ String aTopicSub_[TOPIC_MAX] | array with all subscribed topics (TOPIC_MAX=8) |
 | ~ String aTopicPub_[TOPIC_MAX] | array with all topics to publish |
 | ~ String aPayloadPub_[TOPIC_MAX] | array with values on (re)connect network |
-| ~ bool   aRetainPub_[TOPIC_MAX]  | array with retain values (true|false) |
+| ~ bool   aRetainPub_[TOPIC_MAX]  | array with retain values (true &#124; false) |
 | ~ int numSub_ | number of subscribed topics |
 | ~ int numPub_ | number of topics to publish |
 | ~ WiFiClient d1miniClient   | WLAN client for MQTT |
