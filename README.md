@@ -8,3 +8,7 @@ This repository contains a lot of oop examples (classes) for the Wemos D1 mini:
 * Sensor BH1750 (light sensor, I2C)
 * Sensor BMP180 (temperature and barometric pressure/altitude, I2C)
 * PCF8583 (counter or clock and calendar, I2C)
+* Web server, web client
+* Weather server
+* MQTT client
+* PowerOff shield
