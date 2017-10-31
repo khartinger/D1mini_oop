@@ -1,6 +1,6 @@
 # D1 mini: PowerOff shield as MQTT client
 Sketch: D1_oop19_mqtt_V2_powerOff, Version 2017-10-31   
-[ <u>Deutsche Version</u> ](./LIESMICH.md "Deutsche Version")
+[<u>Deutsche Version</u>](./LIESMICH.md "Deutsche Version")
 
 When SET-button S1 on D1_PowerOff shield is pressed, the D1 mini starts and the LED lights red. The D1 mini tries to connect to a mqtt-broker (via WLAN):   
 `MqttClientKH client("..ssid..", "..password..","mqttservername");`   
