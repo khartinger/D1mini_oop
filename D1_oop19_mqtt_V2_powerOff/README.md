@@ -1,4 +1,7 @@
-# D1_oop19_mqtt_V2_powerOff
+# D1 mini: PowerOff shield as MQTT client
+Sketch: D1_oop19_mqtt_V2_powerOff, Version 2017-10-31   
+[ <u>Deutsche Version</u> ](./LIESMICH.md "Deutsche Version")
+
 When SET-button S1 on D1_PowerOff shield is pressed, the D1 mini starts and the LED lights red. The D1 mini tries to connect to a mqtt-broker (via WLAN):   
 `MqttClientKH client("..ssid..", "..password..","mqttservername");`   
 On success the led shines orange and D1 mini publishes the messages `/button/01` (payload 1) and `/button/01/volt` (= power supply voltage x.xxx).   
@@ -17,7 +20,7 @@ __*Don't forget to change WiFi data to your network values*__ in line
 ![D1_PowerOff_0_shield](./images/D1_PowerOff_shield.png "D1_PowerOff_shield")   
 
 ---
-# Additional infos
+# Additional info
 The class **MqttClientKH** extends the class *PubSubClient* for an easy use of mqtt. So you can use all commands from class *PubSubClient* as well.   
 When library *PubSubClient* is installed in arduino ide, delete directory `/libs` and change   
 `#include "libs/PubSubClient.h"` to `#include <PubSubClient.h>`.    
