@@ -1,11 +1,12 @@
 # D1 mini: Einfacher MQTT-Z&auml;hler mit OLED Anzeige
-Sketch: D1_oop19_mqtt_V2_counter_oled1, Version 2017-10-31   
+Sketch: D1_oop19_mqtt_counter_oled1, Version 2017-07-21   
 [English Version](./README.md "English Version")
 
-Dieses Programm (Sketch) verbindet sich mit dem MQTT-Server &uuml;ber das WLAN und macht folgendes   
-* Der D1 mini abonniert (subscribes) alle Nachrichten vom Typ "button/#".
-* Wird die Nachricht "button/xx" mit dem Inhalt (payload) 1 empfangen, wird der Z&auml;hler um 1 erh&ouml;ht, der Wert am OLED-Shield angezeigt und an die serielle Schnittstelle &uuml;bertragen (xx ist der Wert des Tasters von 00 bis 99). Eine Payload von 0 setzt den Z&auml;hler zur&uuml;ck (auf 0).
-* Danach wird eine Nachricht "button/xx/ok" mit dem Z&auml;hlerstand als Inhalt ver&ouml;ffentlicht.
+Dieses Programm (Sketch) verbindet sich mit dem MQTT-Server &uuml;ber das WLAN und macht folgendes:   
+* Der D1 mini abonniert (subscribes) alle Nachrichten vom Typ "button".
+* Alle empfangenen Nachrichten werden auf der seriellen Schnittstelle angezeigt.
+* Beim Topic "button" wird &uuml;berpr&uuml;ft, ob der Inhalt der Nachricht  (payload) das Zeichen 0 oder 1 ist. Bei 0 wird der Z&auml;hler auf 0 gesetzt, bei 1 der Z&auml;hler um 1 erh&ouml;ht.
+* Anschlie&szlig;end wird der Wert &uuml;ber die serielle Schnittstelle &uuml;bertragen, am OLED-Shield angezeigt und eine Nachricht "button" mit dem Z&auml;hlerstand versendet.
 
 __*Nicht vergessen: Die WLAN-Daten an das eigene Netzwerk anpassen*__ in der Zeile:   
 `MqttClientKH client("..ssid..", "..password..","mqtt server name");`  
@@ -15,17 +16,6 @@ __*Nicht vergessen: Die WLAN-Daten an das eigene Netzwerk anpassen*__ in der Zei
 * OLED Shield: SSD1306, 64x48 pixel, I2C   
 ![D1mini oled mqtt counter](./images/D1_OLED_mqtt1.png "D1mini mit OLED zur Anzeige des Z&auml;hlerstandes")
 
-## Beispiel f&uuml;r die serielle Ausgabe
-```
-Message received. Topic 'button/02', payload='1'
-requestCounter = 3
-Message received. Topic 'button/02/ok', payload='3'
-
-Message received. Topic 'button/01', payload='1'
-requestCounter = 4
-Message received. Topic 'button/01/volt', payload='4.098'
-Message received. Topic 'button/01/ok', payload='4'
-```
 ---
 
 ## Technische Details
