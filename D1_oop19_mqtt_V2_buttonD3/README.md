@@ -21,6 +21,8 @@ The class **MqttClientKH** extends the class *PubSubClient* for easy use of mqtt
 When library *PubSubClient* is installed in arduino IDE, delete files `PubSubClient.h` and `PubSubClient.cpp` in directory `/libs` and change   
 `#include "libs/PubSubClient.h"` to `#include <PubSubClient.h>`.   
 
+Button D3 is handled by class `D1_class_Din`.
+
 ---
 
 ## How to make a D1mini mqtt application

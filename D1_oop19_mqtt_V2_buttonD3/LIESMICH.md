@@ -21,6 +21,8 @@ Der MQTT-Client wird mit Hilfe der Klasse **MqttClientKH** erstellt, die die Kla
 Ist die Bibliothek *PubSubClient* in der Arduino IDE installiert, so m&uuml;ssen die Dateien `PubSubClient.h` und `PubSubClient.cpp` im Verzeichnis `/libs` gel&ouml;scht und folgende Zeile in der Datei *D1_oop19_mqtt_V2_buttonD3.ino* ge&auml;ndert werden:   
 `#include "libs/PubSubClient.h"` auf `#include <PubSubClient.h>`.   
 
+Zum Einlesen des Tasters wird die Klasse `D1_class_Din` verwendet.
+
 ---
 
 ## Erstellen einer MQTT-Anwendung auf dem D1 mini
