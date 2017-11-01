@@ -1,6 +1,6 @@
 # Di mini: Simple MQTT counter with OLED
 Sketch: D1_oop19_mqtt_V2_counter_oled1, Version 2017-10-31   
-[Deutsche Version](./D1_oop19_mqtt_V2_counter_oled1_LIESMICH.md "Deutsche Version")
+[Deutsche Version](./LIESMICH.md "Deutsche Version")
 
 This sketch connects to a MQTT server via WLAN:
 * D1 mini subscribes all messages "button/#".
