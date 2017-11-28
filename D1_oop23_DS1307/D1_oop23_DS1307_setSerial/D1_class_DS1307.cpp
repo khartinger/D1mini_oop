@@ -1,4 +1,4 @@
-//_____D1_class_DS1307.cpp_____________________171127-171127_____
+//_____D1_class_DS1307.cpp_____________________171127-171128_____
 // D1 mini class for access to a RTC DS1307 by i2c.
 // The class is just for communication with a DS1307 clock and 
 // does not regard daylight saving time (=summer time) etc.
@@ -414,14 +414,16 @@ bool DS1307::isSummertime(int yyyy, byte mm,
 {
  if(mm<3 || mm>10) return false; //no DST in Jan, Feb, Nov, Dez
  if(mm>3 && mm<10) return true;  //DST in Apr...Sep
+ //-----March---------------------------------------------------
  if(mm==3)
  {
-  byte ddBegin=31-getDayOfWeek(yyyy,3,31);
-  if( (24*dd+HH) >= (1+timezone+24*ddBegin) ) return true;
+  byte ddBegin=31-getDayOfWeek(yyyy,3,31);  //last Sunday in Mar
+  if( (24*dd+HH+timezone) >= (2+24*ddBegin) ) return true;
   return false;
  }
- byte ddEnd=31-getDayOfWeek(yyyy,10,31);
- if( (24*dd+HH) < (2+timezone+24*ddEnd) ) return true;
+ //-----October-------------------------------------------------
+ byte ddEnd=31-getDayOfWeek(yyyy,10,31);    //last Sunday in Oct
+ if( (24*dd+HH+timezone) < (2+24*ddEnd) ) return true;
  return false;
 }
 
