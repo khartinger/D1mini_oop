@@ -48,6 +48,7 @@ void Dout::setup(int num, bool invert)
 void Dout::set(int val)
 {
  int vout_;
+ if(val!=0) val=1;                     //just for safety reasons
  if(val==val_) return;                 // nothing to change
  val_=val;                             // save new value
  lastMilli_=millis();                  // new start
