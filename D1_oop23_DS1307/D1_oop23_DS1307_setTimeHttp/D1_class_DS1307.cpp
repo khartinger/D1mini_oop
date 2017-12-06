@@ -555,6 +555,7 @@ int DS1307::write1reg(byte reg, byte value)
 {
  Wire.beginTransmission(i2cAddress);
  Wire.write(reg);                 // register
+ delay(1);                        // for D1 mini pro
  Wire.write(value);               // value
  status_=Wire.endTransmission();
  return status_;
