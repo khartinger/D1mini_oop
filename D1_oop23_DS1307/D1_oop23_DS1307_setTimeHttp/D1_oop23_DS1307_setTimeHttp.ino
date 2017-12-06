@@ -12,7 +12,7 @@
 //           (2) Data logger Shield (microSD+DS1307RTC-Shield)
 #include "D1_class_DS1307.h"
 #include "D1_class_TimeHttp.h"
-DS1307 ds1307();                         // object DS1307 clock
+DS1307 ds1307;                         // object DS1307 clock
 TimeHttp time1("..ssid..", "..password..","httpservername");
 
 #define TIMEZONE 1
