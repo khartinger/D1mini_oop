@@ -1,15 +1,14 @@
-# D1 mini - Demo: click methods of class Din (digital input, version 2)
-Sketch: D1_oop01_Din1.ino, Version 2017-12-13   
+# D1 mini - Demo: Digital in and time measuring (class Din, version 2)
+Sketch: D1_oop01_Din2.ino, Version 2017-12-13   
 [Deutsche Version](./LIESMICH.md "Deutsche Version")   
 
-Demonstrate button clicked methods of class Din:   
-* if falling edge: print message to Serial
-* if rising  edge: print message to Serial
-* if button pressed longer than 1 sec: print message to Serial
-* if button is clicked short once: print message to Serial
-* if button is clicked short twice: print message to Serial
+Demonstrate time measuring methods of class Din:   
+* get duration since last change (= edge) and print this time in seconds (10 per line)
+* read button status (0|1) and show it on blue led (button pressed -> led is on)
+* check for falling and rising edge, print a message if true
+* while button is pressed, print P on Serial   
 
-Cycle time 0,1 sec, print results to Serial (115200 Baud).
+Cycle time 0,2 sec, results are printed on Serial (115200 Baud).
 
 ## Hardware
 * WeMos D1 mini
@@ -22,19 +21,23 @@ Cycle time 0,1 sec, print results to Serial (115200 Baud).
 **Example for Serial output:**
 ```
 Press button D3!
-v  Falling Edge
-^  Rising Edge
-Click!
-v  Falling Edge
-LongClick!
-^  Rising Edge
-v  Falling Edge
-^  Rising Edge
-v  Falling Edge
-^  Rising Edge
-DoubleClick!
+0.01s 0.21s 0.41s 0.61s 0.81s 1.01s 1.21s 1.41s 1.61s 1.81s 
+2.01s 2.21s 2.41s 2.61s 2.81s 3.01s 3.21s 
+Last Duration: 3214 ms ---> Button pressed!
+P 0.20s P 0.40s P 0.60s P 0.80s P 1.00s P 1.20s P 1.40s P 1.60s P 1.80s P 2.00s 
+P 2.20s P 2.40s P 2.60s P 2.80s P 3.00s P 3.20s 
+Last Duration: 3203 ms ---> Button released!
+0.20s 0.40s 0.60s 0.80s 1.00s 1.20s 1.40s 1.60s 1.80s 
+Last Duration: 1801 ms ---> Button pressed!
+P 0.20s P 0.40s 
+Last Duration: 401 ms ---> Button released!
+0.20s 0.40s 0.60s 0.80s 1.00s 1.20s 1.40s 
+Last Duration: 1401 ms ---> Button pressed!
+P 0.20s P 0.40s 
+Last Duration: 401 ms ---> Button released!
+0.20s 0.40s 0.60s 0.80s 1.00s 1.20s 1.40s 1.60s 1.80s 2.00s 
+2.20s 2.40s 2.60s 2.80s 3.00s 3.20s 3.40s 3.60s 3.80s 4.00s
 ```
-
 
 ## Class diagram Din
 | class Din                     |                                               |
@@ -69,3 +72,4 @@ DoubleClick!
 | ~ int clickL                  | state of long click (0=no, 1= falling edge) |
 | ~ unsigned long lastMilli_    | absolute time in ms since last edge (change of pin value). Value of milli() |
 | ~ unsigned long lastDuration_ | time (duration) in ms of this state (since last change if pin value) | 
+  
