@@ -13,7 +13,7 @@ Screen1 display_;                           // display object
 float f=20;                                 //dummy value 20..40
 char carray[10];                            // convert helper
 String s1;                                  // help string
-String sDeg=String((char)247);              // degree symbol
+String sDeg=String((char)248);              // degree symbol
 
 void setup() {
  display_.screen4(1,"Temperature");         // line 1 (inverted)
