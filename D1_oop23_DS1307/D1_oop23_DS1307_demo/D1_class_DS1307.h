@@ -33,7 +33,7 @@ class DS1307 {
   byte   mm_, dd_;                // month (1..12), day (1..31)
   byte   HH_, MM_, SS_;           // hour (0..23),minute,seconds
   byte   ww_;                     // day of week 0=sunday, ..
-  //-----constructor(s)-----------------------------------------
+ //-----constructor(s)------------------------------------------
  public:
   DS1307();                       // Constructor, set default
   DS1307(int i2c_address);        // Constructor, set i2c addr.
