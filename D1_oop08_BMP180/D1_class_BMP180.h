@@ -1,7 +1,7 @@
 ﻿//_____D1_class_BMP180.h______________________170415-170416_____
-// D1 mini class for temperature and humidity sensor BMP180.
+// D1 mini class for temperature and pressure sensor BMP180.
 // BMP180: Pressure    300..1100hPa, 0,01hPa, 16..19bit
-//         Temperature -40�..+85�C, 0,1�, 16bit
+//         Temperature -40°..+85°C, 0,1°, 16bit
 // Default i2c address is 0x77
 // See also SparkFun Electronics library SFE_BMP180-master
 #ifndef D1_CLASS_BMP180_H
