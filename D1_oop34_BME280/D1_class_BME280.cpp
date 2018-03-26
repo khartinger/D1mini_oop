@@ -311,8 +311,8 @@ void BME280::measuring()
  value=Wire.read();
  value=(value<<8) | Wire.read();
  iH=(int32_t)value;
- status=Wire.endTransmission();
- if(status!=BME280_OK) return;
+ //status=Wire.endTransmission();
+ //if(status!=BME280_OK) return;
  //-----build temperature value-----------------------------------
  if(iT!=BME280_ERR_T) //value in case temp meas. was disabled
  {
@@ -408,7 +408,7 @@ uint8_t BME280::read8(byte reg) {
   return 0xFF;
  }
  uint8_t value=Wire.read();
- Wire.endTransmission();
+ //Wire.endTransmission();
  return value;
 }
 
@@ -428,7 +428,7 @@ uint16_t BME280::read16(byte reg) {
  }
  value=Wire.read();
  value=(value<<8) | Wire.read();
- Wire.endTransmission();
+ //Wire.endTransmission();
  return value;
 }
 
@@ -449,7 +449,7 @@ uint32_t BME280::read24(byte reg) {
  value=Wire.read();
  value=(value<<8) | Wire.read();
  value=(value<<8) | Wire.read();
- Wire.endTransmission();
+ //Wire.endTransmission();
  return value;
 }
 
