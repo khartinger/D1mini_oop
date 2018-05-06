@@ -1,11 +1,16 @@
 # D1 mini: Einfacher MQTT-Z&auml;hler mit OLED Anzeige
-Sketch: D1_oop19_mqtt_V2_counter_oled1, Version 2017-10-31   
-[English Version](./README.md "English Version")
+Sketch: D1_oop19_mqtt_V2_counter_oled1, Version 2018-05-06   
+[ <u>English Version</u> ](./README.md "English Version")
 
 Dieses Programm (Sketch) verbindet sich mit dem MQTT-Server &uuml;ber das WLAN und macht folgendes   
-* Der D1 mini abonniert (subscribes) alle Nachrichten vom Typ "button/#".
-* Wird die Nachricht "button/xx" mit dem Inhalt (payload) 1 empfangen, wird der Z&auml;hler um 1 erh&ouml;ht, der Wert am OLED-Shield angezeigt und an die serielle Schnittstelle &uuml;bertragen (xx ist der Wert des Tasters von 00 bis 99). Eine Payload von 0 setzt den Z&auml;hler zur&uuml;ck (auf 0).
-* Danach wird eine Nachricht "button/xx/ok" mit dem Z&auml;hlerstand als Inhalt ver&ouml;ffentlicht.
+* Der D1 mini abonniert (subscribes) alle Nachrichten vom Typ "`button/#`".
+* Wird die Nachricht "`button/xx`" mit dem Inhalt (payload) 1 empfangen,
+    * wird der Z&auml;hler um 1 erh&ouml;ht,
+    * der Wert und die Button-Nummer am OLED-Shield angezeigt und
+    * die Werte &uuml;ber die serielle Schnittstelle &uuml;bertragen (xx ist der Wert des Tasters von 00 bis 99).   
+
+    Eine Payload von 0 setzt den Z&auml;hler zur&uuml;ck (auf 0).
+* Danach wird eine Nachricht "`button/xx/ok`" mit dem Z&auml;hlerstand als Inhalt ver&ouml;ffentlicht.
 
 __*Nicht vergessen: Die WLAN-Daten an das eigene Netzwerk anpassen*__ in der Zeile:   
 `MqttClientKH client("..ssid..", "..password..","mqtt server name");`  
@@ -30,8 +35,8 @@ Message received. Topic 'button/01/ok', payload='4'
 
 ## Technische Details
 Der MQTT-Client wird mit Hilfe der Klasse **MqttClientKH** erstellt, die die Klasse *PubSubClient* erweitert. Somit k&ouml;nnen auch alle Methoden der Klasse *PubSubClient* verwendet werden.   
-Ist die Bibliothek *PubSubClient* in der Arduino IDE installiert, so m&uuml;ssen die Dateien `PubSubClient.h` und `PubSubClient.cpp` im Verzeichnis `/libs` gel&ouml;scht und folgende Zeile in der Datei *D1_oop19_mqtt_V2_powerOff.ino* ge&auml;ndert werden:   
-`#include "libs/PubSubClient.h"` auf `#include <PubSubClient.h>`.   
+Ist die Bibliothek *PubSubClient* in der Arduino IDE installiert, so m&uuml;ssen die Dateien `PubSubClient.h` und `PubSubClient.cpp` im Verzeichnis `/src/mqtt` gel&ouml;scht und folgende Zeile in der Datei *D1_class_MqttClientKH.h* ge&auml;ndert werden:   
+`#include "PubSubClient.h"` auf `#include <PubSubClient.h>`.   
 
 ---
 

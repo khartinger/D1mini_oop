@@ -1,5 +1,5 @@
 # Di mini: Taster an D3 als MQTT-Client
-Sketch: D1_oop19_mqtt_V2_buttonD3, Version 2017-10-31   
+Sketch: D1_oop19_mqtt_V2_buttonD3, Version 2018-05-06   
 [<u>English Version</u>](./README.md "English Version")
 
 Dieses Programm-Beispiel (Sketch) verbindet sich &uuml;ber WLAN mit einem MQTT Server und macht folgendes:
@@ -16,10 +16,10 @@ __*Nicht vergessen: Die WLAN-Daten an das eigene Netzwerk anpassen*__ in der Zei
 * 1-Button Shield D3   
 ![D1mini with 1-BUTTON Shield](./images/D1_1ButtonShield.png "D1mini with 1-BUTTON Shield")
 
-## Technische Details 
+## Technische Details
 Der MQTT-Client wird mit Hilfe der Klasse **MqttClientKH** erstellt, die die Klasse *PubSubClient* erweitert. Somit k&ouml;nnen auch alle Methoden der Klasse *PubSubClient* verwendet werden.   
-Ist die Bibliothek *PubSubClient* in der Arduino IDE installiert, so m&uuml;ssen die Dateien `PubSubClient.h` und `PubSubClient.cpp` im Verzeichnis `/libs` gel&ouml;scht und folgende Zeile in der Datei *D1_oop19_mqtt_V2_buttonD3.ino* ge&auml;ndert werden:   
-`#include "libs/PubSubClient.h"` auf `#include <PubSubClient.h>`.   
+Ist die Bibliothek *PubSubClient* in der Arduino IDE installiert, so m&uuml;ssen die Dateien `PubSubClient.h` und `PubSubClient.cpp` im Verzeichnis `/src/mqtt` gel&ouml;scht und folgende Zeile in der Datei *D1_class_MqttClientKH.h* ge&auml;ndert werden:   
+`#include "PubSubClient.h"` auf `#include <PubSubClient.h>`.   
 
 Zum Einlesen des Tasters wird die Klasse `D1_class_Din` verwendet.
 

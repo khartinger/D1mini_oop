@@ -1,5 +1,5 @@
 # Di mini: Button D3 as MQTT client
-Sketch: D1_oop19_mqtt_V2_buttonD3, Version 2017-10-31   
+Sketch: D1_oop19_mqtt_V2_buttonD3, Version 2018-05-06   
 [ <u>Deutsche Version</u> ](./LIESMICH.md "Deutsche Version")
 
 This sketch connects to a MQTT server via WLAN, then:
@@ -15,11 +15,11 @@ __*Don't forget to change WiFi data to your network values*__ in line
 * 1-Button Shield D3   
 ![D1mini with 1-BUTTON Shield](./images/D1_1ButtonShield.png "D1mini with 1-BUTTON Shield")
 
-## Technical Info   
-
-The class **MqttClientKH** extends the class *PubSubClient* for easy use of mqtt. So you can also use all commands from class *PubSubClient*.   
-When library *PubSubClient* is installed in arduino IDE, delete files `PubSubClient.h` and `PubSubClient.cpp` in directory `/libs` and change   
-`#include "libs/PubSubClient.h"` to `#include <PubSubClient.h>`.   
+## Technical Info
+The class **MqttClientKH** extends the class *PubSubClient* for an easy use of mqtt. So you can use all commands from class *PubSubClient* as well.   
+When library *PubSubClient* is installed in arduino IDE, delete files `PubSubClient.h` and `PubSubClient.cpp` in directory `/src/mqtt` and change   
+`#include "PubSubClient.h"` to `#include <PubSubClient.h>`   
+in file *D1_class_MqttClientKH.h*.
 
 Button D3 is handled by class `D1_class_Din`.
 

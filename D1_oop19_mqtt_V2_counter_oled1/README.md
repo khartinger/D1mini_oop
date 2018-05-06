@@ -1,11 +1,15 @@
 # Di mini: Simple MQTT counter with OLED
-Sketch: D1_oop19_mqtt_V2_counter_oled1, Version 2017-10-31   
-[Deutsche Version](./LIESMICH.md "Deutsche Version")
+Sketch: D1_oop19_mqtt_V2_counter_oled1, Version 2018-05-06   
+[ <u>Deutsche Version</u> ](./LIESMICH.md "Deutsche Version")
 
 This sketch connects to a MQTT server via WLAN:
-* D1 mini subscribes all messages "button/#".
-* When message "button/xx" with payload 1 is received, a counter is incremented, the value is displayed on oled shield and printed to Serial (xx is the number of button 00 to 99). Payload 0 resets the counter.
-* After that, a message "button/xx/ok" is published containing the counter value.
+* D1 mini subscribes all messages "`button/#`".
+* When message "`button/xx`" with payload 1 is received,
+    * a counter is incremented,
+    * the counter value and button number is displayed on oled shield and
+    * values are printed to Serial (xx is the number of button 00 to 99).
+    Payload 0 resets the counter.
+* After that, a message "`button/xx/ok`" is published containing the counter value.
 
 __*Don't forget to change WiFi data to your network values*__ in line   
 `MqttClientKH client("..ssid..", "..password..","mqtt server name");`  
@@ -28,9 +32,9 @@ Message received. Topic 'button/01/ok', payload='4'
 ```
 ## Technical Info
 The class **MqttClientKH** extends the class *PubSubClient* for an easy use of mqtt. So you can use all commands from class *PubSubClient* as well.   
-When library *PubSubClient* is installed in arduino IDE, delete files `PubSubClient.h` and `PubSubClient.cpp` in directory `/libs` and change   
-`#include "libs/PubSubClient.h"` to `#include <PubSubClient.h>`.
-
+When library *PubSubClient* is installed in arduino IDE, delete files `PubSubClient.h` and `PubSubClient.cpp` in directory `/src/mqtt` and change   
+`#include "PubSubClient.h"` to `#include <PubSubClient.h>`   
+in file *D1_class_MqttClientKH.h*.
 
 ---
 

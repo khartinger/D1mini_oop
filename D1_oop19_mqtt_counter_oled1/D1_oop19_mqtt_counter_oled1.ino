@@ -7,10 +7,12 @@
 // * After that, a message "counter" is published with the 
 //   counter value.
 //
-#include "D1_class_MqttClientKH.h"
-#include "D1_class_DisplayKH.h"
-DisplayKH     display_;                // 
-MqttClientKH client("..ssid..", "..password..","mqttservername");
+#include "src/mqtt/D1_class_MqttClientKH.h"
+#include "src/screen1/D1_class_Screen1.h"
+Screen1 display_;                 // 
+//MqttClientKH client("..ssid..", "..password..","mqttservername");
+MqttClientKH client("Raspi10", "12345678","10.1.1.1");
+
 unsigned long requestCounter=0;
 
 //_____display counter value on oled____________________________

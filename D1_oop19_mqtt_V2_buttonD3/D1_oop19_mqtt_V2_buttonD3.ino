@@ -1,5 +1,4 @@
-//_____D1_oop19_mqtt_V2_buttonD3.ino__________170721-171029_____
-//
+//_____D1_oop19_mqtt_V2_buttonD3.ino__________170721-180506_____
 // Simple MQTT-Example (needs a broker!)
 // * On Power-On a message "button/02" with payload -1 is sent.
 // * When button D3 is pressed, this is printed to Serial and 
@@ -10,11 +9,13 @@
 // Hardware: 
 // (1) WeMos D1 mini
 // (2) 1-Button shield
-#include "D1_class_MqttClientKH.h"
-#include "D1_class_Din.h"
+
+#include "src/mqtt/D1_class_MqttClientKH.h"
+#include "src/din/D1_class_Din.h"
 #define  BUTTON_NAME              "button/02"
 Din button_(D3);
-MqttClientKH client("..ssid..", "..password..","mqttservername");
+//MqttClientKH client("..ssid..", "..password..","mqttservername");
+MqttClientKH client("Raspi10", "12345678","10.1.1.1");
 
 //_____process all subscribed incoming messages_________________
 void callback(char* topic, byte* payload, unsigned int length)
@@ -34,7 +35,7 @@ void setup()
  //-----setup mqtt----------------------------------------------
  client.setClientName(String(BUTTON_NAME));
  client.addSubscribe(String(BUTTON_NAME)+"/#");
- client.addPublish(String(BUTTON_NAME),"-1");
+ client.addPublish(String(BUTTON_NAME),"-1", false);
  client.setCallback(callback);
  client.reconnect();
 }
@@ -44,7 +45,7 @@ void loop()
 {
  if(client.isConnected())
  {
-  if(button_.is_falling_edge())
+  if(button_.isFallingEdge())
   {
    client.publish(BUTTON_NAME, "1", false);  // true=retain
    Serial.println("\n************ button pressed! ************");

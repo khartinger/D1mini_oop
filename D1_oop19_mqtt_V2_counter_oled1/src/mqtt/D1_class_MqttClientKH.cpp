@@ -1,82 +1,92 @@
-//_____D1_class_MqttClientKH.h________________170721-171029_____
-// The class MqttClient extends the class PubSubClient,
-//  so you can use all commands from this class as well.
-// When PubSubClient lib is installed, delete directory /libs !
+//_____D1_class_MqttClientKH.cpp______________170721-180428_____
+// The class MqttClient extends the class PubSubClient vor an
+//  easy use of mqtt.
+// You can use all commands from class PubSubClient as well.
+// When PubSubClient lib is installed, delete directory /libs!
 //
 // Hardware: D1 mini
-//           Button Shield D3
-#ifndef D1_CLASS_MQTTCLIENTKH_H
-#define D1_CLASS_MQTTCLIENTKH_H
-#include <ESP8266WiFi.h>
-#include "libs/PubSubClient.h"         // use with /libs
+#include "D1_class_MqttClientKH.h"
 
-#define SSID_SIZE     20               // max.len ssid
-#define PASS_SIZE     20               // max.len password
-#define MQTT_SIZE     20               // max.len mqttservername
-#define TOPIC_MAX      8               // max. topics to sub
-#define MQTT_RECONNECT_MS         4000
-#define TIMEOUT_WIFI_CONNECT_MS   8000 // wait for WLAN
-#define MESSAGE_MAXLEN             127
-#ifndef DEBUG1
- #define DEBUG1                   true // true=Serial output
-#endif
-
-class MqttClientKH : public PubSubClient {
- //-----properties----------------------------------------------
- protected:
-  char ssid_[SSID_SIZE+1];             //
-  char pass_[PASS_SIZE+1];             // 
-  char mqtt_[MQTT_SIZE+1];             // 
-  int  port_;                          // mqtt port (def 1883)
-  String aTopicSub_[TOPIC_MAX];        // subscribed topics
-  String aTopicPub_[TOPIC_MAX];        // topics to publish
-  String aPayloadPub_[TOPIC_MAX];      // value on (re)start
-  bool   aRetainPub_[TOPIC_MAX];       // retain true|false
-  int    numSub_;                      // number subscribed topics
-  int    numPub_;                      // number topics to publish
-  WiFiClient d1miniClient;             // WLAN client for MQTT
-  String sClientName;                  // MQTT client name
-  long millis_lastConnected;           // last connection time [ms]
- public:
-  MqttClientKH(char* ssid, char* pwd, char* mqtt_server, int port);
-  int  getNumSub() { return numSub_; };
-  int  getNumPub() { return numPub_; };
-  void clrSubscribe() { numSub_=0; };
-  void clrPublish() { numPub_=0; };
-  void setClientName(String sName) {sClientName=sName;};
-  String getClientName() { return sClientName; };
-  //-----methods to setup WLAN and mqtt connection--------------
-  bool setup_wifi();
-  bool reconnect();
-  bool isConnected();
-  bool sendPubSubTopics();
-  void printPubSubTopics2Serial(String clientId);
-  //-----methods to define mqtt topics--------------------------
-  bool addSubscribe(String topic);
-  bool delSubscribe(String topic);
-  bool addPublish(String topic, String payload, bool retain);
-  bool delPublish(String topic);
-  void publishString(String topic, String payload);
-  void publishString(String topic, String payload, bool retain);
-  //-----seldom used-------------------------------------------
-  int  setSubscribe(String aTopicSub[], int num);
-  int  setPublish(String aTopicPub[], String aPayload[], int num);
-  void subscribeString(String topic);
-};
+//**************************************************************
+//    constructor & co
+//**************************************************************
 
 //_____constructor______________________________________________
+MqttClientKH::MqttClientKH():PubSubClient(d1miniClient)
+{
+ strcpy(ssid_, MQTT_SSID);
+ strcpy(pass_, MQTT_PASS);
+ strcpy(mqtt_, MQTT_SERVER);
+ port_=MQTT_PORT;
+ setup();
+}
+
+//_____constructor 2____________________________________________
 MqttClientKH::MqttClientKH(char* ssid, char* pwd, 
-  char* mqtt_server="localhost", int port=1883):PubSubClient(d1miniClient)
+  char* mqtt_server="localhost"):PubSubClient(d1miniClient)
+{
+ strcpy(ssid_, ssid);
+ strcpy(pass_, pwd);
+ strcpy(mqtt_, mqtt_server);
+ port_=MQTT_PORT;
+ setup();
+}
+
+//_____constructor 3____________________________________________
+MqttClientKH::MqttClientKH(char* ssid, char* pwd, 
+  char* mqtt_server="localhost", 
+  int port=1883):PubSubClient(d1miniClient)
 {
  strcpy(ssid_, ssid);
  strcpy(pass_, pwd);
  strcpy(mqtt_, mqtt_server);
  port_=port;
+ setup();
+}
+
+//_____setup (called by constructor)____________________________
+void MqttClientKH::setup()
+{
  millis_lastConnected = 0;
  numSub_=0;
  numPub_=0;
  setup_wifi();
  setServer(mqtt_, port_);
+}
+
+//**************************************************************
+// setter and getter methods
+//**************************************************************
+// NEW 180428
+String MqttClientKH::getsClientState(int client_state) 
+{
+ String s1;
+ s1="#"+String(client_state)+" ";
+ switch(client_state)
+ {
+  case MQTT_CONNECTION_TIMEOUT: // -4
+   s1+="MQTT connection timeout"; break;
+  case MQTT_CONNECTION_LOST:            // -3
+   s1+="MQTT connection lost"; break;
+  case MQTT_CONNECT_FAILED:             // -2
+   s1+="MQTT connect failed"; break;
+  case MQTT_DISCONNECTED: // -1
+   s1+="MQTT disconnected"; break;
+  case MQTT_CONNECTED: // 0
+   s1+="MQTT connected"; break;
+  case MQTT_CONNECT_BAD_PROTOCOL: //    1
+   s1+="MQTT CONNECT_BAD_PROTOCOL"; break;
+  case MQTT_CONNECT_BAD_CLIENT_ID: //   2
+   s1+="MQTT CONNECT_BAD_CLIENT_ID"; break;
+  case MQTT_CONNECT_UNAVAILABLE: //     3
+   s1+="MQTT CONNECT_UNAVAILABLE"; break;
+  case MQTT_CONNECT_BAD_CREDENTIALS: // 4
+   s1+="MQTT CONNECT_BAD_CREDENTIALS"; break;
+  case MQTT_CONNECT_UNAUTHORIZED: //    5
+   s1+="MQTT connnect unauthorized"; break;
+ default: s1+="Unknown state"; break;
+ }
+ return s1;
 }
 
 //**************************************************************
@@ -88,7 +98,8 @@ bool MqttClientKH::setup_wifi()
 {
  if(WiFi.status()==WL_CONNECTED) return true;
  delay(10);
- if(DEBUG1) Serial.println("\nConnecting to "+String(ssid_));
+ if(DEBUG_MQTT) Serial.println("\nConnecting to "+String(ssid_));
+ WiFi.mode(WIFI_STA);                              // NEW 180428
  WiFi.begin(ssid_, pass_);
  //-----try to connect to WLAN (access point)-------------------
  int i=TIMEOUT_WIFI_CONNECT_MS/200;
@@ -96,16 +107,16 @@ bool MqttClientKH::setup_wifi()
  {
   delay(200);
   i--;
-  if(DEBUG1){Serial.print("."); if(i%50==0) Serial.println("");}
+  if(DEBUG_MQTT){Serial.print("."); if(i%50==0) Serial.println("");}
  }
  //-----connected to WLAN (access point)?-----------------------
  if(i<1)
  { //-----not connected to WLAN---------------------------------
-  if(DEBUG1) Serial.println("No connection - time-out!");
+  if(DEBUG_MQTT) Serial.println("No connection - time-out!");
   return false;
  }
  //-----success WiFi new connection/reconnect-------------------
- if(DEBUG1)Serial.println("\nConnected! IP address is "+WiFi.localIP().toString());
+ if(DEBUG_MQTT)Serial.println("\nConnected! IP address is "+WiFi.localIP().toString());
  return true;
 }
 
@@ -117,11 +128,11 @@ bool MqttClientKH::reconnect()
  //-----WiFi connected?-----------------------------------------
  if(!setup_wifi()) return false;
  //-----WiFi yes, mqtt no---------------------------------------
- if(DEBUG1)Serial.println("MQTT: Not connected - reconnect...");
+ if(DEBUG_MQTT)Serial.println("MQTT: Not connected - reconnect...");
  //-----MQTT: try to send all PubSub topics---------------------
  if(!sendPubSubTopics())
  {
-  if(DEBUG1)Serial.println("failed, client state rc="+String(state()));
+  if(DEBUG_MQTT) { Serial.println("failed, client state: "+getsClientState(state())); };
   return false;
  }
  return true;
@@ -161,6 +172,7 @@ bool MqttClientKH::sendPubSubTopics()
   clientId += String(random(0xffff), HEX);
  }
  //-----Try to connect------------------------------------------
+ if(DEBUG_MQTT) Serial.println("sendPubSubTopics: clientId="+ clientId);
  if(connect(clientId.c_str()))
  {
   //-----Once connected, publish an announcement----------------
@@ -173,7 +185,7 @@ bool MqttClientKH::sendPubSubTopics()
   {
    subscribeString(aTopicSub_[i]);
   }
-  if(DEBUG1) printPubSubTopics2Serial(clientId);
+  if(DEBUG_MQTT) printPubSubTopics2Serial(clientId);
   return true;
  }
  return false;
@@ -367,4 +379,3 @@ void MqttClientKH::subscribeString(String topic)
  subscribe(top);
 }
 
-#endif
