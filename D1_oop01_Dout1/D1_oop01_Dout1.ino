@@ -1,15 +1,16 @@
-//_____D1_oop01_Dout1.ino_____________________171203-171203_____
+//_____D1_oop01_Dout1.ino_____________________171203-180507_____
 // Function: Demonstrate methods of class Dout:
-// * turn blue led on 2 sec, off 2 sec
-// * toggle led every 0,5s and print duration every 0,1 s 
+// * on start: turn blue led on 2 sec, off 2 sec
+// * loop: toggle led every 0,5s and print duration every 0.1s 
 //   on Serial (115200 Baud).
 //
 // Hardware: (1) WeMos D1 mini
 //
 // Created by Karl Hartinger, December 03, 2017.
+// Last modified 2018-05-07: Move class files to /src/...
 // Released into the public domain.
 
-#include "D1_class_Dout.h"
+#include "src/dout/D1_class_Dout.h"
 #define BAUDRATE             115200    // for Serial
 Dout led_blue(true);                   // blue LED (default D4)
 

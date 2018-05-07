@@ -1,24 +1,27 @@
-//_____D1_oop01_Din1.ino______________________171213-171213_____
+//_____D1_oop01_Din1.ino______________________171213-180507_____
 // Demonstrate button clicked methods of class Din:
 // * if falling edge: print message to Serial
 // * if rising  edge: print message to Serial
 // * if button pressed longer than 1 sec: print message to Serial
 // * if button is clicked short once: print message to Serial
 // * if button is clicked short twice: print message to Serial
+// * while button is pressed, print P on Serial
 //
-// Cycle time 0,1 sec, print results to Serial (115200 Baud).
+// Cycle time 0,1 sec, print results to Serial (115200 Baud)
+// and show them via blue LED.
 //
 // Hardware: (1) WeMos D1 mini
 //           (2) Button shield (D3) or wire to GND
 //
-// Created by Karl Hartinger, December 07, 2017.
+// Created by Karl Hartinger, December 07, 2017,
+// Last Change May 07, 2018: Move class files to /src
 // Released into the public domain.
 
-#include "D1_class_Din.h"
-#include "D1_class_Dout.h"
+#include "src/din/D1_class_Din.h"
+#include "src/dout/D1_class_Dout.h"
 
 #define BAUDRATE             115200    // for Serial
-Din  button(D5);                       // button D5
+//Din  button(D5);                       // button D5
 Din  button;                           // button (default D3)
 Dout blueLed(true);                    // blue LED (default D4)
 

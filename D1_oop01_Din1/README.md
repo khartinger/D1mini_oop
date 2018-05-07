@@ -8,8 +8,9 @@ Demonstrate button clicked methods of class Din:
 * if button pressed longer than 1 sec: print message to Serial
 * if button is clicked short once: print message to Serial
 * if button is clicked short twice: print message to Serial
+* while button is pressed, print P on Serial
 
-Cycle time 0,1 sec, print results to Serial (115200 Baud).
+Cycle time 0,1 sec, print results to Serial (115200 Baud) and show them via blue LED.
 
 ## Hardware
 * WeMos D1 mini

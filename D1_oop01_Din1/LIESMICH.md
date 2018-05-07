@@ -8,8 +8,9 @@ Zeige die Verwendung der Klick-Methoden der Klasse Din:
 * Wenn Taster l&auml;nger als eine Sekunde gedr&uuml;ckt wird: Nachricht &uuml;ber serielle Schnittstelle
 * Wenn Taster einmal kurz gedr&uuml;ckt wird: Nachricht &uuml;ber serielle Schnittstelle
 * Wenn Taster zweimal kurz gedr&uuml;ckt wird: Nachricht &uuml;ber serielle Schnittstelle
+* Solange der Taster gedr&uuml;ckt wird: Schicke P &uuml;ber die serielle Schnittstelle
 
-Zykluszeit ist 0,1 Sekunden, Ergebnisse werden an die serielle Schnittstelle gesendet (115200 Baud).
+Zykluszeit ist 0,1 Sekunden, Ergebnisse werden an die serielle Schnittstelle gesendet (115200 Baud) und &uuml;ber die blaue LED angezeigt.
 
 ## Hardware
 * WeMos D1 mini
