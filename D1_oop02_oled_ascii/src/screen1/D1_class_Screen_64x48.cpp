@@ -361,17 +361,17 @@ void _Adafruit_SSD1306::drawFastHLine(int16_t x, int16_t y,
  switch(rotation) {
   case 0: //.....0 degree rotation, do nothing..................
    break;
-  case 1: //.....90�, swap x & y for rotation, then invert x....
+  case 1: //.....90Ã¯Â¿Â½, swap x & y for rotation, then invert x....
    bSwap = true;
    ssd1306_swap(x, y);
    x = WIDTH - x - 1;
    break;
-  case 2: // 180�, invert x and y, shift y around for height....
+  case 2: // 180Ã¯Â¿Â½, invert x and y, shift y around for height....
    x = WIDTH - x - 1;
    y = HEIGHT - y - 1;
    x -= (w-1);
    break;
-  case 3: // 270�, swap x & y for rotation, then invert y  
+  case 3: // 270Ã¯Â¿Â½, swap x & y for rotation, then invert y  
           // and adjust y for w (not to become h)
    bSwap = true;
    ssd1306_swap(x, y);
@@ -423,19 +423,19 @@ void _Adafruit_SSD1306::drawFastVLine
  switch(rotation) {
   case 0: //.....0 degree rotation, do nothing..................
    break;
-  case 1: // 90�, swap x & y for rotation, then invert x and 
+  case 1: // 90Ã¯Â¿Â½, swap x & y for rotation, then invert x and 
           // adjust x for h (now to become w)
    bSwap = true;
    ssd1306_swap(x, y);
    x = WIDTH - x - 1;
    x -= (h-1);
    break;
-  case 2: // 180�, invert x and y then shift y around for height
+  case 2: // 180Ã¯Â¿Â½, invert x and y then shift y around for height
    x = WIDTH - x - 1;
    y = HEIGHT - y - 1;
    y -= (h-1);
    break;
-  case 3:// 270�, swap x & y for rotation, then invert y........
+  case 3:// 270Ã¯Â¿Â½, swap x & y for rotation, then invert y........
    bSwap = true;
    ssd1306_swap(x, y);
    y = HEIGHT - y - 1;
@@ -1554,3 +1554,5 @@ int16_t _Adafruit_GFX::height(void) const { return _height; }
 // Overwrite in subclass if inverting is supported by hardware!
 void _Adafruit_GFX::invertDisplay(boolean i) { // Do nothing
 }
+
+

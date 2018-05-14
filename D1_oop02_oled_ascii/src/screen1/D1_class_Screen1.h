@@ -121,3 +121,5 @@ class Screen1 : public _Adafruit_SSD1306 {
  void screen1 (String text_, char align_, bool cls_);
 };
 #endif
+
+
