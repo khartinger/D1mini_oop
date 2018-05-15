@@ -1,9 +1,10 @@
-//_____D1_oop02_oled_ascii.ino________________171230-180514_____
+//_____D1_oop02_oled_ascii.ino________________171230-180515_____
 // Show all ASCII characters 32-255 on oled
 // Hardware: WeMos D1 Mini
 //           OLED Shield: SSD1306, 64x48 pixel, I2C
+// Special: char(158) = Euro instead of Pt (Pesetas) (158=9E)
 // Created by Karl Hartinger, May 14, 2018
-// Last Change: -
+// Last Change: May 15, 2018
 // Released into the public domain.
 
 #include "src/screen1/D1_class_Screen1.h"   //

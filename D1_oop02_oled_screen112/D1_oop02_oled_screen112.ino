@@ -1,10 +1,10 @@
-//_____D1_oop02_oled_screen112.ino____________170411-171231_____
+//_____D1_oop02_oled_screen112.ino____________170411-180515_____
 // Display text on OLED shield using the easy to use display 
 //class Screen1 for displaying text
 // Hardware: WeMos D1 Mini
 //           OLED Shield: SSD1306, 64x48 pixel, I2C
 //                        SCL GPIO5, SDA GPIO4, OLED_RESET GPIO0
-#include "D1_class_Screen1.h"
+#include "src/screen1/D1_class_Screen1.h"
 #define OLED_RESET 0              // OLED_RESET=D3=GPIO0
 Screen1 display_;
 
@@ -18,4 +18,3 @@ void setup() {
 
 void loop() {
 }
-
