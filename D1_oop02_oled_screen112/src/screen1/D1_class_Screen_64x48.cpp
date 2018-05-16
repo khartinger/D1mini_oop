@@ -1,6 +1,7 @@
-//_____D1_class_Screen_64x48.cpp______________171229-171229_____
+//_____D1_class_Screen_64x48.cpp______________171229-180515_____
 // The class Screen_64x48 contains basic OLED functions only for
 // WeMos D1 mini OLED shield 0,66" 64*48 pixel.
+// Special: char(158) = Euro instead of Pt (Pesetas) (158=9E)
 // The code is strongly based on Adafruit libs
 //   * _Adafruit_SSD1306-esp8266-64x48.zip and
 //   * Adafruit-GFX-Library-1.1.5.zip
@@ -8,52 +9,6 @@
 // classes especially after an update of the libraries.
 //
 #include "D1_class_Screen_64x48.h"     // basic oled functions
-
-//_____replace special chars by hex code________________________
-String utf8ToOled(String s)
-{
- String s1="";
- char c1,c2;
- int i, imax=s.length();
- Serial.print("imax=");Serial.println(imax);
- for(i=0; i<imax; i++)
- {
-  c1=s.charAt(i);
-  if(c1<128) 
-   s1=s1+String(c1);
-  else
-  {
-   c2=s.charAt(++i);
-   switch(c1)
-   {
-    case 0xc2: //-----first byte is C2--------------------------
-     switch(c2) {
-      case 0xb0: s1=s1+"\xF8"; break;  //degree sign
-      case 0xb5: s1=s1+"\xE6"; break;  //micro sign
-      case 0xaa: s1=s1+"\xA6"; break;  //feminine ordinal indicator
-      case 0xb2: s1=s1+"\xFD"; break;  //superscript 2
-      default: s1=s1+"?";
-     }
-     break;
-    case 0xc3: //-----first byte is C3--------------------------
-     switch(c2){
-      case 0x84: s1=s1+"\x8E"; break;  //A with diaeresis
-      case 0x96: s1=s1+"\x99"; break;  //O with diaeresis
-      case 0x9c: s1=s1+"\x9A"; break;  //U with diaeresis
-      case 0xa4: s1=s1+"\x84"; break;  //a with diaeresis
-      case 0xb6: s1=s1+"\x94"; break;  //o with diaeresis
-      case 0xbc: s1=s1+"\x81"; break;  //u with diaeresis
-      case 0x9f: s1=s1+"\xE1"; break;  //sharp s, beta
-      default: s1=s1+"?";
-     }
-     break;
-    default: s1=s1+"?";
-   }
-  }
- }
- return s1;
-}
-
 
 //**************************************************************
 //    class _Adafruit_SSD1306 (renamed to _Adafruit_SSD1306)

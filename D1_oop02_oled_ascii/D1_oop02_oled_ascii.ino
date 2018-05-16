@@ -1,5 +1,6 @@
 //_____D1_oop02_oled_ascii.ino________________171230-180515_____
 // Show all ASCII characters 32-255 on oled
+// Screen1 : Codepage 437, except 9E=158=Euro-sign (instead Pts)
 // Hardware: WeMos D1 Mini
 //           OLED Shield: SSD1306, 64x48 pixel, I2C
 // Special: char(158) = Euro instead of Pt (Pesetas) (158=9E)

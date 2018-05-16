@@ -1,4 +1,4 @@
-//_____D1_class_Screen1.h_____________________170412-171229_____
+//_____D1_class_Screen1.h_____________________170412-180515_____
 // The class Screen1 extends the class Screen_64x48 
 // with screen methods to write text on the display. Also a
 // 5x8 pixel font is included in this file.
@@ -111,6 +111,7 @@ class Screen1 : public _Adafruit_SSD1306 {
  //-----helper functions----------------------------------------
  public:
   String utf8ToOled(String s);
+ 
  protected:
  String mytrim(int max_, String txt_, char align);
  void scr6(int line_, String text_, char align_, bool cls_, bool invert_);

@@ -1,9 +1,13 @@
-//_____D1_oop02_oled_testall_V3.ino___________170411-171230_____
+//_____D1_oop02_oled_testall_V3.ino___________170411-180516_____
 // Show text on different OLED shield screen layouts
 // using class Screen1
-// Hardware: WeMos D1 Mini
-//           OLED Shield: SSD1306, 64x48 pixel, I2C
-#include "D1_class_Screen1.h"
+// Screen 1: Codepage 437, except 9E=158=Euro-sign (instead Pts)
+// Hardware: (1) WeMos D1 Mini
+//           (2) OLED Shield: SSD1306, 64x48 pixel, I2C
+// Created by Karl Hartinger, April 11, 2017,
+// Last modified 2018-05-16: Move class files to /src/...
+// Released into the public domain.
+#include "src/screen1/D1_class_Screen1.h"
 Screen1 display_(D0);             // OLED_RESET=D0=GPIO16
 String X=String((char)178);       // perfect test character
 
@@ -40,7 +44,7 @@ void loop() {
  display_.screen5i(2,s1);
  delay(t3);
  //-----screen4 and screen4i------------------------------------
- display_.screen4Clear(1,"Screen4 i",'c');
+ display_.screen4Clear(1,"Screen4",'c');
  display_.screen4(2,s1);
  delay(t3);
  display_.screen4i(1,"Screen4 i",'c');
