@@ -1,16 +1,19 @@
-//_____D1_oop30_2xSHT30_oled.ino______________180210-180210_____
+//_____D1_oop30_2xSHT30_oled.ino______________180210-180519_____
 // Measure temperature and humidity with two SHT30 and 
 // show values on OLED
 // Shows the temperature difference, when SHT30 shield is
 // mounted directly above D1mini or away from it.
-// Hardware: WeMos D1 Mini
-//           2x SHT30 Shield (I2C addresses 0x44 and 0x45)
-//           OLED  Shield (SSD1306, 64x48 pixel, I2C)
-//           (Dual Base Shield by request)
-#include "D1_class_Screen1.h"
-#include "D1_class_SHT30.h"
-
-Screen1 display_;                           // display object
+// Hardware: (1) WeMos D1 Mini
+//           (2) 2x SHT30 Shield (I2C addresses 0x44 and 0x45)
+//           (3) OLED Shield: SSD1306, 64x48 pixel, I2C (0x3C)
+//               SCL=D1=DGPIO5, SDA=D2=GPIO4, OLED_RESET GPIO0
+// Created by Karl Hartinger, April 14, 2017
+// Last modified 2018-05-19: Move class files to /src/...
+// Released into the public domain.
+#include "src/sht30/D1_class_SHT30.h"
+#include "src/screen1/D1_class_Screen1.h"
+#define OLED_RESET 0              // OLED_RESET=D3=GPIO0
+Screen1 display_;                 // display object
 SHT30 sht30_45;                             // default 0x45
 SHT30 sht30_44(0x44);                       // address 0x44
 String sDeg=String((char)248);              // degree symbol

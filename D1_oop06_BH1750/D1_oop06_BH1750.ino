@@ -1,12 +1,15 @@
-//_____D1_oop06_BH1750.ino____________________170414-170414_____
-// Send value of digital light sensor to Serial
-// Hardware: WeMos D1 mini
-//           BH1750 light sensor on i2c bus
-#include "D1_class_BH1750.h"
+//_____D1_oop06_BH1750.ino____________________170414-180519_____
+// Send value of i2c light sensor BH1750 to Serial every 0,5s
+// Hardware: (1) WeMos D1 mini
+//           (2) BH1750 light sensor on i2c bus (0x23, 0x5C)
+// Created by Karl Hartinger, April 14, 2017
+// Last modified 2018-05-19: Move class files to /src/...
+// Released into the public domain.
+#include "src/bh1750/D1_class_BH1750.h"
 BH1750 bh1750;                    // brightness
 
 void setup() {
- Serial.begin(9600);              // init serial comm 9600 bps
+ Serial.begin(115200);            // init serial comm 115200 bps
  Serial.println();
 }
 
@@ -19,5 +22,5 @@ void loop() {
  }
  else
  { Serial.print("Status: "); Serial.println(status); }
- delay(200);
+ delay(500);
 }
