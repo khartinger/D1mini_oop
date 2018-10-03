@@ -5,7 +5,6 @@
 // Created by Karl Hartinger, October 02, 2018.
 // Modified 20..-..-..: -
 // Released into the public domain.
-//#include "src/statemachine/D1_class_Statemachine.h"
 #include "D1_class_Statemachine.h"
 
 //**************************************************************
@@ -24,17 +23,22 @@ Statemachine::Statemachine(int state_max, int state_delay)
 
 //_____setup properties_________________________________________
 void Statemachine::setup() {
- stateMax=STATE_MAX;
- stateDelay=STATE_DELAY;
+ stateMax=STATE_MAX_DEFAULT;
+ stateDelay=STATE_DELAY_DEFAULT;
  stateCounter=STATE_ONE;
  beginMillis=millis();
 }
 
 //**************************************************************
-//     get values
+//     set/get values
 //**************************************************************
+void Statemachine::setStateDelay(int state_delay)
+{
+ if(stateDelay>=0) stateDelay=state_delay;
+}
 
 int Statemachine::getState() { return stateCounter; }
+int Statemachine::getStateMax() { return stateMax; }
 int Statemachine::getDuration() {return(millis()-beginMillis);}
 int Statemachine::loopBegin()
 {

@@ -9,22 +9,25 @@
 #define D1_CLASS_STATEMACHINE_H
 #include "Arduino.h"
 #define STATE_ONE                1     // 1st number of state
-#define STATE_MAX               10     // max number of states
-#define STATE_DELAY            200     // state delay in ms
+#define STATE_MAX_DEFAULT       10     // max number of states
+#define STATE_DELAY_DEFAULT    200     // state delay in ms
 class Statemachine {
  protected:
   //-----properties---------------------------------------------
-  int statecounter;
-  int statemax, statedelay;
-  unsigned long loop_millis;
+  int stateCounter;
+  int stateMax, stateDelay;
+  unsigned long beginMillis;
+ public:
   //-----constructor & co---------------------------------------
   Statemachine();
-  Statemachine(int state_max, state_delay);
+  Statemachine(int state_max, int state_delay);
  protected:
   void   setup();                 // setup properties
  public:
-  //-----get values---------------------------------------------
+  //-----set/get values-----------------------------------------
+  void   setStateDelay(int stateDelay);
   int    getState();
+  int    getStateMax();
   int    getDuration();
   int    loopBegin();
   unsigned long loopEnd();

@@ -9,8 +9,7 @@
 // Hardware: (1) WeMos D1 mini
 // Created by Karl Hartinger, October 02, 2018
 // Released into the public domain.
-//#include "src/statemachine/D1_class_Statemachine.h"
-#include "D1_class_Statemachine.h"
+#include "src/statemachine/D1_class_Statemachine.h"
 #define STATE_MAX               10     // max number of states
 #define STATE_DELAY            200     // state delay in ms
 #define STATE_LED1_ON            1     // 1. state: led on 
