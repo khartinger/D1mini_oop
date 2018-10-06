@@ -3,7 +3,7 @@
 // It counts from 1 to state_max (incl.) and waits
 // state_delay milliseconds on every state.
 // Created by Karl Hartinger, October 02, 2018.
-// Modified 20..-..-..: -
+// Modified 2018-10-05: some set/get added
 // Released into the public domain.
 #include "D1_class_Statemachine.h"
 
@@ -17,8 +17,8 @@ Statemachine::Statemachine() { setup(); }
 Statemachine::Statemachine(int state_max, int state_delay)
 {
  setup();
- if(state_max>1) stateMax=state_max;
- if(stateDelay>=0) stateDelay=state_delay;
+ setStateMax(state_max);
+ setStateDelay(state_delay);
 }
 
 //_____setup properties_________________________________________
@@ -32,14 +32,24 @@ void Statemachine::setup() {
 //**************************************************************
 //     set/get values
 //**************************************************************
+void Statemachine::setStateMax(int state_max)
+{
+ if(state_max>1) stateMax=state_max;
+}
+
 void Statemachine::setStateDelay(int state_delay)
 {
  if(stateDelay>=0) stateDelay=state_delay;
 }
 
-int Statemachine::getState() { return stateCounter; }
-int Statemachine::getStateMax() { return stateMax; }
+int Statemachine::getStateMax()   { return stateMax; }
+int Statemachine::getStateDelay() { return stateDelay; }
+int Statemachine::getState()      { return stateCounter; }
 int Statemachine::getDuration() {return(millis()-beginMillis);}
+
+//**************************************************************
+//     working methods
+//**************************************************************
 int Statemachine::loopBegin()
 {
  beginMillis=millis();                       // get start "time"
