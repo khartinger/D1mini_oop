@@ -1,8 +1,8 @@
-//_____D1_class_BH1750.cpp____________________170414-180519_____
+//_____D1_class_BH1750.cpp____________________170414-181020_____
 // D1 mini class for i2c digital light sensor BH1750.
 // Default i2c address is 0x23 (other option 0x5C).
 // Created by Karl Hartinger, April 14, 2017
-// Last modified 2018-05-19: Move class files to /src/...
+// Last modified 2018-10-20: Add measuring delay 200ms
 // Released into the public domain.
 #include "D1_class_BH1750.h"      // 
 
@@ -18,6 +18,8 @@ BH1750::BH1750(int i2c_address) {
 //_____setup device BH1750______________________________________
 void BH1750::setup()
 {
+ nextMeasuring_=0;
+ measuringDelay_=BH1750_MEASURING_DELAY_MS;
  //-----wake up sensor------------------------------------------
  Wire.begin();                    //(4,5): SDA on 4, SCL on 5
  Wire.beginTransmission(i2cAddress);
@@ -53,6 +55,10 @@ long BH1750::getBi() {
 //_____read temperature and humidity from sensor________________
 void BH1750::measuring()
 {
+  //-----make a delay between two measuringments-----------------
+ if(millis()<nextMeasuring_) return;
+ nextMeasuring_=millis()+measuringDelay_;
+ 
  //-----set Continuously H-Resolution Mode, Resolution 1 lx-----
  Wire.beginTransmission(i2cAddress);
  Wire.write(0x10);                // Continuously H-Resol. Mode
@@ -74,4 +80,13 @@ void BH1750::measuring()
   brightness=temp_;
  }
  status=Wire.endTransmission(); 
+}
+
+//_____set mesuring delay_______________________________________
+// if measuringDelay_<MIN you get allways the same value...
+int BH1750::setMeasuringDelay(int delay_ms)
+{
+ if(delay_ms>=BH1750_MEASURING_DELAY_MIN)
+  measuringDelay_=delay_ms;
+ return measuringDelay_;
 }
