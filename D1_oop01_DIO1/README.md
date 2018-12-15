@@ -11,12 +11,13 @@ The status of a button at D3 (=DGPIO0) is shown on blue LED (D4=GPIO2).
 
 ![D1mini with 1-BUTTON Shield](./images/D1_1ButtonShield.png "D1mini with 1-BUTTON Shield")
 
-## Class diagrams
-| class Din |
-| --------- |
-| - void setup(int num) <br> - int  din_num <br> - int  din_old <br> - int  last_edge  |
-| + Din() <br> + Din(int num) <br> + int  get(void) <br> + bool isPressed(void) <br> + bool is_falling_edge(void) <br> + bool is_rising_edge(void) |
+## Class diagrams   
 
+| class Din    |   
+| ---------    |   
+| - void setup(int num) <br> - int  din_num <br> - int  din_old <br> - int  last_edge  |   
+| + Din() <br> + Din(int num) <br> + int  get(void) <br> + bool isPressed(void) <br> + bool is_falling_edge(void) <br> + bool is_rising_edge(void) |   
+   
 | class Led |
 | --------- |
 | - void setup(int num) <br> - int  led_num |
