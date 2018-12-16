@@ -1,11 +1,10 @@
-//_____D1_class_BlueLedInt.h__________________181215-181215_____
-// D1 mini class for blue led on D1 mini board.
-// Uses timer interrupt.
+//_____D1_class_BlueLedInt.h__________________181101-181101_____
+// D1 mini class for blue led on D1 mini shield.
 // Function: on, off, toggle, blink, brightness
 // Default: pin D4=GPIO2
 // Hardware: (1) WeMos D1 mini
 // Note    : Class BlueLedInt uses timer interrupt
-// Created by Karl Hartinger, December 15, 2018.
+// Created by Karl Hartinger, November 01, 2018.
 // Changes : -
 // Released into the public domain.
 #pragma once
@@ -27,8 +26,9 @@ extern "C" {
 class BlueLedInt {
  //-----properties----------------------------------------------
  // see struct blueLedTimer
- int brightness_;
- bool usePwm_;
+ protected:
+  int brightness_;                     // value 0..100 [%]
+  bool usePwm_;                        // true: PWM for brightn.
  //-----constructor & co----------------------------------------
  public:
   BlueLedInt();

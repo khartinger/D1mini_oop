@@ -1,14 +1,14 @@
-//_____D1_oop01_BlueLedInt.ino________________181215-181215_____
+//_____D1_oop01_BlueLedInt.ino________________181101-181101_____
 // Function: Demonstrate methods of class BlueLedInt:
 // * On start: (1) turn blue led on 2 sec, off 1 sec
-//             (2) turn blue led slowly on 1x
+//             (2) turn on blue led slowly 1x
 //             (3) blinking while delay is done
 //             (4) stop blinking after 2.5x (led remains on)
 //             (5) start blinking again
 // * Loop:     blink 0,1s on 0,9s off
 // Hardware: (1) WeMos D1 mini
 // Note    : Class BlueLedInt uses timer interrupt
-// Created by Karl Hartinger, December 15, 2018.
+// Created by Karl Hartinger, November 01, 2018.
 // Changes : -
 // Released into the public domain.
 
@@ -16,7 +16,7 @@
 BlueLedInt bli;                        // blue LED (default D4)
 
 void setup() {
- Serial.begin(115200); Serial.println();
+ //Serial.begin(115200); Serial.println();
  //-----led on/off----------------------------------------------
  bli.on();                             // blue led on
  delay(2000);                          // wait 2 sec

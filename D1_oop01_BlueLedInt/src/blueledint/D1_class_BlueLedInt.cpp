@@ -1,10 +1,9 @@
-//_____D1_class_BlueLedInt.cpp________________181215-181215_____
-// D1 mini class for blue led on D1 mini board.
-// Uses timer interrupt.
+//_____D1_class_BlueLedInt.cpp________________181118-181118_____
+// D1 mini class for blue led on D1 mini shield.
 // Function: on, off, toggle, blink, brightness
 // Default: pin D4=GPIO2
 // Hardware: (1) WeMos D1 mini
-// Created by Karl Hartinger, December 15, 2018.
+// Created by Karl Hartinger, November 18, 2018.
 // Changes: -
 // Released into the public domain.
 #include "D1_class_BlueLedInt.h"
@@ -44,7 +43,7 @@ BlueLedInt::BlueLedInt(int pin) { setup(pin); }
 //_____setup output pin and properties__________________________
 void BlueLedInt::setup(int pin)
 {
- os_timer_disarm(&blueLedTimer1);      //stopp timer
+ os_timer_disarm(&blueLedTimer1);      // stopp timer
  blueLedTimer.pinNum=pin;              // set pin number (D4)
  pinMode(blueLedTimer.pinNum, OUTPUT); // set pin to output
  analogWriteRange(100);                // for analog... 
@@ -103,17 +102,6 @@ void BlueLedInt::blink(int on_ms, int off_ms)
  os_timer_disarm(&blueLedTimer1);      //stopp timer
  os_timer_setfn(&blueLedTimer1, blueLedTimerISR, NULL);
  os_timer_arm(&blueLedTimer1, 0 , false);
-/*
- os_timer_setfn(&blueLedTimer1, blueLedTimerISR, NULL);
- blueLedTimer.pinVal=1-blueLedTimer.pinVal;
- digitalWrite(blueLedTimer.pinNum, blueLedTimer.pinVal);
- 
- //blueLedTimer.pinVal=1-blueLedTimer.pinVal;
- if(blueLedTimer.pinVal==1)
-  os_timer_arm(&blueLedTimer1, blueLedTimer.msOn, false);
- else
-  os_timer_arm(&blueLedTimer1, blueLedTimer.msOff, false);
-*/
 }
 
 //_____turn blinking on_________________________________________
