@@ -46,7 +46,7 @@ set: lamp|current0|
 (2) Relais Shield   
 (3) D1_INA122_V2 180924 (Selbstbau) oder Analog in mit Stromwandler ASM-010   
 ![D1 INA122 relay](./images/D1_ina122_relay.png "D1mini mit selfmade INA122 shield and relay shield")   
-_D1mini mit Eigenbau INA122 Shield, Relais Shield, Stromwandler ASM-010 und Lampe_
+_Bild 1: D1mini mit Eigenbau INA122 Shield, Relais Shield, Stromwandler ASM-010 und Lampe_
 
 ## Software
 Dieser Sketch verwendet die Klassen      
