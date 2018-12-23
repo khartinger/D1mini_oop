@@ -1,10 +1,10 @@
-//_____D1_class_Screen1a.cpp__________________170412-181208_____
+//_____D1_class_Screen1a.cpp__________________170412-181215_____
 // The class Screen1 extends the class Screen_64x48 
 // with screen methods to write text on the display.
 //
 // Hardware: (1) WeMos D1 mini
 //           (2) OLED Shield: SSD1306, 64x48 pixel, I2C
-// Created by Karl Hartinger, December 08, 2018,
+// Created by Karl Hartinger, December 15, 2018,
 // Last modified: scroll screen 4|5|6
 // Released into the public domain.
 #include "D1_class_Screen1a.h"       //

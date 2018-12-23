@@ -1,4 +1,4 @@
-//_____D1_class_Screen_64x48.cpp______________171229-180515_____
+//_____D1_class_Screen_64x48.cpp______________171229-181215_____
 // The class Screen_64x48 contains basic OLED functions only for
 // WeMos D1 mini OLED shield 0,66" 64*48 pixel.
 // Special: char(158) = Euro instead of Pt (Pesetas) (158=9E)
@@ -7,7 +7,9 @@
 //   * Adafruit-GFX-Library-1.1.5.zip
 // Use this class, if you have problems with the Adafruit
 // classes especially after an update of the libraries.
-//
+// Created by Karl Hartinger, December 15, 2018
+// Last modified: -
+// Released into the public domain.
 #include "D1_class_Screen_64x48.h"     // basic oled functions
 
 //**************************************************************

@@ -1,15 +1,15 @@
-//_____D1_oop02_oled_screen6_scroll.ino_____181215-181215_____
+//_____D1_oop02_oled_screen6_scroll.ino_____181223-181223_____
 // Screen6: Demo for vertical scrolling of text.
 // 1. Scroll a long text
 // 2. Display text "Line #" cyclic left, middle and right and 
 //    invert every 5th line.
 // Hardware: (1) WeMos D1 Mini
-//           (2) OLED Shield: 0.66" SSD1306, 64x48 pixel, I2C
-// Created by Karl Hartinger, December 15, 2018
+//           (2) OLED Shield: 0.66", SSD1306, 64x48 pixel, I2C
+// Created by Karl Hartinger, December 23, 2018
 // Last modified: -
 // Released into the public domain.
 #include "src/screen1a/D1_class_Screen1a.h"
-#define  VERSION "2018-12-15 D1_oop02_oled_screen6_scroll"
+#define  VERSION "2018-12-23 D1_oop02_oled_screen6_scroll"
 #define  OLED_RESET 16                 // D3=GPIO0, D0=GPIO16
 Screen1  display_;
 
@@ -24,13 +24,16 @@ void setup() {
 
 void loop() {
  //-----scroll a longer text----------------------------------
+ //.....title.................................................
  display_.screen6iClear(5,"Text "+String(textcounter),'c');
+ if((++textcounter)>99) textcounter=1;
  delay(1000);
+ //.....show first line of text to scroll.....................
  display_.screen6(7,sL,'l');
+ //.....scroll all other text lines...........................
  int scrolllines=6+int(sL.length()/10);
  for(int j=0; j<scrolllines; j++) 
  { delay(400); display_.screen6(7,""); }
- if((++textcounter)>99) textcounter=1;
  //-----test align and inverted lines-------------------------
  display_.screen6iClear(5,"align|inv",'c');
  delay(1000);
@@ -45,4 +48,3 @@ void loop() {
   delay(400);
  }
 }
-
