@@ -24,13 +24,16 @@ void setup() {
 
 void loop() {
  //-----scroll a longer text----------------------------------
+ //.....title.................................................
  display_.screen4iClear(3,"Text "+String(textcounter),'c');
+ if((++textcounter)>99) textcounter=1;
  delay(1000);
+ //.....show first line of text to scroll.....................
  display_.screen4(5,sL,'l');
+ //.....scroll all other text lines...........................
  int scrolllines=4+int(sL.length()/10);
  for(int j=0; j<scrolllines; j++) 
  { delay(400); display_.screen4(5,""); }
- if((++textcounter)>99) textcounter=1;
  //-----test align and inverted lines-------------------------
  display_.screen4iClear(3,"align|inv",'c');
  delay(1000);
@@ -45,4 +48,3 @@ void loop() {
   delay(400);
  }
 }
-
