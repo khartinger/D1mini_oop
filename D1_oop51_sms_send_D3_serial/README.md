@@ -16,9 +16,10 @@ When button D3 is pressed a test sms is sent to phone number TEL_NUMBER1 using S
 _Figure 1: D1mini with Battery Shield, 9pol ProtoBoard Shield and 1-Button Shield. On the left: 3.3V-RS232-Modul_ 
 
 ## Software - Details
-1. Select software serial for GSM module in file `D1_class_GSMmodule.h`:   
-`#define GSMMOD_SWS            true     //software serial`   
-2. Change phone number for SMS in file `D1_oop51_sms_send_D3_serial.ino`:   
+* Class __`GSMmodule`__: Choose connection while creating the object. No parameter uses software serial, a parameter `false` chooses hardware serial. E.g.      
+`GSMmodule mod1;                        // SIM module soft serial`   
+`//GSMmodule mod1(false);               // false=Hardware serial`   
+*. Change phone number for SMS in file `D1_oop51_sms_send_D3_serial.ino`:   
 `//#define  TEL_NUMBER1 "0680xxxxxxx"  // CHANGE TO YOUR OWN #!!`   
 
 On program start all I/Os ware initialized and D1 mini tests in a loop, if a module is connected. (Method `isModule()`).   

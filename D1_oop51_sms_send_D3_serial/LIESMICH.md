@@ -16,9 +16,10 @@ Das Dr&uuml;cken des Tasters D3 bewirkt das Senden einer SMS mit Hilfe eines Mod
 _Bild 1: D1mini mit Battery Shield, 9pol ProtoBoard Shield und 1-Button Shield. Links davon: 3,3V-RS232-Modul_ 
 
 ## Software - Details
-1. In der Datei `D1_class_GSMmodule.h` muss f&uuml;r das GSM-Modul die Verwendung der Software-seriellen Schnittstelle gew&auml;hlt werden:   
-`#define GSMMOD_SWS            true     //software serial`   
-2. In der Datei `D1_oop51_sms_send_D3_serial.ino` muss die Telefonnummer eingetragen werden, an die die Test-SMS geschickt werden soll:   
+* Klasse __`GSMmodule`__: Die Einstellung der Schnittstelle erfolgt beim Erstellen des Objektes. Ohne Parameter wird die Software-serielle Schnittstelle gew&auml;hlt, mit Parameter `false` wird die Hardware-Schnittstelle gew&auml;hlt. ZB   
+`GSMmodule mod1;                        // SIM module soft serial`   
+`//GSMmodule mod1(false);               // false=Hardware serial`   
+* In der Datei `D1_oop51_sms_send_D3_serial.ino` muss die Telefonnummer eingetragen werden, an die die Test-SMS geschickt werden soll:   
 `//#define  TEL_NUMBER1 "0680xxxxxxx"  // CHANGE TO YOUR OWN #!!`   
 
 Nach dem Programmstart werden zuerst die Ein-/Ausg&auml;nge initialisiert und danach in einer Schleife gepr&uuml;ft, ob ein Modem angeschlossen ist (Methode `isModule()`).   
