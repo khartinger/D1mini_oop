@@ -22,7 +22,7 @@ _Figure 1: D1mini with Battery Shield, 9pol ProtoBoard Shield and 1-Button Shiel
 *. Change phone number for SMS in file `D1_oop51_sms_send_D3_serial.ino`:   
 `//#define  TEL_NUMBER1 "0680xxxxxxx"  // CHANGE TO YOUR OWN #!!`   
 
-On program start all I/Os ware initialized and D1 mini tests in a loop, if a module is connected. (Method `isModule()`).   
+On program start all I/Os are initialized and D1 mini tests in a loop, if a module is connected. (Method `isModule()`).   
 After this some setttings are done by method `begin()`: Turn echo off, set SMS text format, use modem memory (ME), calculate number of first SMS in memory and check, to which network the SIM connected.   
 Then the program waits for a keystroke (D3) in `loop()`. Therefore input D3 is read twice within 25ms and the results were compared. This avoids that a SMS is sent erroneously by a short peak.   
 If a falling edge is detected, blue led is switched on, a SMS is sent, the result is displayed on the (hardware) serial and the blue led is switched off.
