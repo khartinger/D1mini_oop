@@ -118,6 +118,7 @@ void setup() {
  display_.screen6(2,"Waiting 4",'c');
  display_.screen6(3,"balance",'c');
  display_.screen6(4,"info SMS",'c');
+ delay(1000);
  i=101;
  bool ok=false;
  while((i>0)&&(!ok)) {
