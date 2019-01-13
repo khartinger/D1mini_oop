@@ -1,4 +1,4 @@
-//_____D1_oop58_sms_io_balance_oled.ino_______181230-181230_____
+//_____D1_oop58_sms_io_balance_oled.ino_______181230-190113_____
 // Demo class GSMmodule: Send and receive SMS.
 // Program asks for the prepaid balance and displays all program
 // steps and SIM prepaid balance on OLED.
@@ -12,10 +12,10 @@
 //               SIM800C GSM GPRS module STM32
 //           (4) OLED shield 0.66"
 // Created by Karl Hartinger, December 30, 2018.
-// Last modified: -
+// Last modified: 190113...line 82 screen6iClear, 114 mod1.begin()
 // Released into the public domain.
 
-#define  VERSION58  "2018-12-30 D1_oop58_sms_io_balance_oled"
+#define  VERSION58  "2019-01-13 D1_oop58_sms_io_balance_oled"
 #define  FUNCTION58 "Display prepaid SIM balance on oled."
 #define  OLED_RESET            RST     // D3=GPIO0, D0=GPIO16
 
@@ -75,11 +75,11 @@ void setup() {
   display_.screen6iClear(1,"ModemERROR");
   display_.screen6(2,mod1.getsStatus());
   display_.screen6(6,String(++i),'c');
-  delay(20000);
+  delay(2000);
  }; 
  //-----Module OK -> network info-------------------------------
  sNetwork=mod1.getsNetwork();
- display_.screen6i(1,sNetwork);
+ display_.screen6iClear(1,sNetwork);
  display_.screen6(6,"Module OK!");
  delay(4000);
  //-----change network manually (if necessary)------------------
@@ -111,6 +111,7 @@ void setup() {
  display_.screen6(3,"balance",'c');
  display_.screen6(4,"SMS (<30s)");
  while(mod1.requestBalanceSMS()!=GSMMOD_OK) {
+  mod1.begin();
   display_.screen6(6,String(++i),'c');
   delay(2000);
  }

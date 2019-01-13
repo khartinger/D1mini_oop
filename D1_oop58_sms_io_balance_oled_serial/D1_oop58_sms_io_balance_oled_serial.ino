@@ -5,6 +5,7 @@
 // SIM-Connection: Hardware Serial @ TX, RX OR
 //                 Software Serial @ D5 (=TX), D6 (=RX)
 // Status info   : OLED shield 0.66" 64x48px (Screen6)
+// Note: Remove module and TX-resistor (2k2) while programming!
 //
 // Hardware: (1) WeMos D1 mini
 //           (2) Battery Shield for WEMOS D1 mini
@@ -12,7 +13,7 @@
 //               SIM800C GSM GPRS module STM32
 //           (4) OLED shield 0.66"
 // Created by Karl Hartinger, December 30, 2018.
-// Last modified: 190113...line 78 screen6iClear, 110 mod1.begin()
+// Last modified: 190113...line 79 screen6iClear, 111 mod1.begin()
 // Released into the public domain.
 
 #define  VERSION58  "2019-01-13 D1_oop58_sms_io_balance_oled_serial"
