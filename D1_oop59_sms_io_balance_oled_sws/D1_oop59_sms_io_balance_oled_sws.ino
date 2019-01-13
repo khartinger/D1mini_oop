@@ -71,7 +71,7 @@ void setup() {
   display_.screen6iClear(1,"ModemERROR");
   display_.screen6(2,mod1.getsStatus());
   display_.screen6(6,String(++i),'c');
-  delay(20000);
+  delay(2000);
  }; 
  //-----Module OK -> network info-------------------------------
  sNetwork=mod1.getsNetwork();
