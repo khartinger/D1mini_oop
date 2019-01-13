@@ -38,6 +38,7 @@ void displayBalance(String network1, String text1, String date1)
  String oledDate="??.??.????";
  String oledTime="??:??:??";
  String oledBalance="?.??";
+ yield();
  //-----prepair SMS date and time for OLED----------------------
  if(date1.length()>=17) {
   oledDate=date1.substring(6,8)+"."+date1.substring(3,5)+".20"+date1.substring(0,2);
@@ -120,6 +121,7 @@ void setup() {
  display_.screen6(2,"Waiting 4",'c');
  display_.screen6(3,"balance",'c');
  display_.screen6(4,"info SMS",'c');
+ delay(1000);
  i=101;
  bool ok=false;
  while((i>0)&&(!ok)) {
