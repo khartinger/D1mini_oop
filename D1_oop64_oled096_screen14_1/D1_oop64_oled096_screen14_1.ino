@@ -1,6 +1,6 @@
 //_____D1_oop64_oled096_screen14_1.ino________191017-191024_____
 //* Turn on all pixel (for test), then use screen14 to
-//* display a long text on an oled 0,96" (128x64 pipel)
+//* display a long text on an oled 0,96" (128x64 pixel)
 // Hardware: (1) WeMos D1 Mini
 //           (2) OLED Shield (128x64 pixel, I2C-addr 0x3C)       
 // See also: https://blog.hau.me/2018/12/26/i2c-oled-display-on-a-wemos-d1-mini/
