@@ -1,6 +1,8 @@
-//_____D1_class_Screen096.h___________________191217-191221_____
+//_____D1_class_Screen096.h___________________191217-191223_____
 // The class Screen096 extends the classes SSD1306Wire and
 // OLEDDisplay with screen methods to write text on the display.
+// * line number <0: display line inverted
+// * line 0 = line 1 with border
 // Also included in this file:
 // * a table to convert codepage 437 to utf8 and vice versa
 //   (table_cp437_utf8)
@@ -10,7 +12,7 @@
 // Hardware: (1) WeMos D1 mini
 //           (2) OLED Shield: SSD1306, 128x64 pixel, I2C
 // Created by Karl Hartinger, December 17, 2019.
-// Last modified: 191221 screenXXDot added
+// Last modified: 2019-12-23 add screenXXDot lines
 // Released into the public domain.
 
 #ifndef D1_CLASS_SCREEN096_H
@@ -64,6 +66,7 @@ class Screen096 : public SSD1306Wire {
   void screen14(int line_, const String &text_, char align_, bool cls_);
   void screen14Dot(int line_);
   void screen14Dot(int line_, int initvalue);
+  void screen14Dot0(int line_);
   void screen15Clear(int line_, const String &text_);
   void screen15Clear(int line_, const String &text_, char align_);
   void screen15(int line_, const String &text_);
@@ -71,6 +74,7 @@ class Screen096 : public SSD1306Wire {
   void screen15(int line_, const String &text_, char align_, bool cls_);
   void screen15Dot(int line_);
   void screen15Dot(int line_, int initvalue);
+  void screen15Dot0(int line_);
   void screen16Clear(int line_, const String &text_);
   void screen16Clear(int line_, const String &text_, char align_);
   void screen16(int line_, const String &text_);
@@ -78,7 +82,8 @@ class Screen096 : public SSD1306Wire {
   void screen16(int line_, const String &text_, char align_, bool cls_);
   void screen16Dot(int line_);
   void screen16Dot(int line_, int initvalue);
- 
+  void screen16Dot0(int line_);
+  
   //-----one-color-screen only with text (no title)-------------
   void screen7Clear(int line_, const String &text_);
   void screen7Clear(int line_, const String &text_, char align_);
@@ -87,6 +92,7 @@ class Screen096 : public SSD1306Wire {
   void screen7(int line_, const String &text_, char align_, bool cls_);
   void screen7Dot(int line_);
   void screen7Dot(int line_, int initvalue);
+  void screen7Dot0(int line_);
   void screen8Clear(int line_, const String &text_);
   void screen8Clear(int line_, const String &text_, char align_);
   void screen8(int line_, const String &text_);
@@ -94,6 +100,7 @@ class Screen096 : public SSD1306Wire {
   void screen8(int line_, const String &text_, char align_, bool cls_);
   void screen8Dot(int line_);
   void screen8Dot(int line_, int initvalue);
+  void screen8Dot0(int line_);
 
  //-----special screens-----------------------------------------
  void dotClear(void);                  // clear, draw border

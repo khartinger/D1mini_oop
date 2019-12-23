@@ -1,17 +1,20 @@
-//_____D1_class_Screen096.cpp_________________191217-191221_____
+//_____D1_class_Screen096.cpp_________________191217-191223_____
 // The class Screen096 extends the classes SSD1306Wire and
 // OLEDDisplay with screen methods to write text on the display.
+// * line number <0: display line inverted
+// * line 0 = line 1 with border
 // Also included in this file:
 // * a table to convert codepage 437 to utf8 and vice versa
 //   (table_cp437_utf8)
 // * four fonts
-//   fontKH_cp437_16x7, fontKH_cp437_8x6, fontKH_utf8_16x8
-//   fontKH_utf8_12x6
+//   fontKH_cp437_16x7, fontKH_cp437_8x6, 
+//   fontKH_utf8_16x8,  fontKH_utf8_12x6
 // Hardware: (1) WeMos D1 mini
 //           (2) OLED Shield: SSD1306, 128x64 pixel, I2C
 // Created by Karl Hartinger, December 17, 2019.
-// Last modified: 191221 screenXXDot added
+// Last modified: 2019-12-23 add screenXXDot lines
 // Released into the public domain.
+
 #include "D1_class_Screen096.h"         //
 
 void Screen096::begin()
@@ -304,6 +307,8 @@ void Screen096::screenX(int line_, const String &text_,
  int dx2=0;                            // half char width
  int dy1=0;                            // start pixel of line
  int maxc_;                            // max. chars in one line
+ OLEDDISPLAY_COLOR colorf=WHITE;       // front color
+ OLEDDISPLAY_COLOR colorb=BLACK;       // background color
  String s_=text_;                      // remaining chars of text
  String s1;                            // text in this line
  int lenc_;                            // string length in chars
@@ -314,21 +319,28 @@ void Screen096::screenX(int line_, const String &text_,
   clear();                             // clear screen
   for(int i=0; i<DOT_COUNTER_MAX; i++) dotCounter[i]=0;
  }
+ if(line_<0)
+ {
+  colorf=BLACK;
+  colorb=WHITE;
+  line_=-line_;
+ }
  setFont(fontText);                    // set text font
  dy=getFontHeight();                   // char height
  dx2=getFontWidth()/2;                 // half char
  maxc_=int(getWidth()/getFontWidth()); // max. chars in one line
  //-----write text----------------------------------------------
+ setColor(colorf);
  for(int l1=line_; l1<9; l1++)
  {
   dy1=y0_+(l1-1)*dline_;
   if(dy1+dy>64) break;
   if(align_=='c'){ if((lenc_<maxc_) &&((lenc_&1)>0)) dx=dx2; }
   if(clr_) { 
-   setColor(BLACK);
-   fillRect(0,dy1,128,dline_+1);   //clear line
-   setColor(WHITE);
+   setColor(colorb);
+   fillRect(0,dy1,128,dline_);         // clear line
   }
+  setColor(colorf);
   s1=mytrim(maxc_, s_, align_);
   drawString(dx,dy1,s1);
   if(lenc_<=maxc_) break;
@@ -336,17 +348,21 @@ void Screen096::screenX(int line_, const String &text_,
   lenc_=utf8length(s_);
  }
  //-----draw lines, show display--------------------------------
- display();                                 // show buffer
+ display();                            // show buffer
+ setColor(WHITE);
 }
 
 //_____display lines (21char)___________________________________
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
+// line number <0: invert line
 void Screen096::screenXY(int line_, const String &text_, 
  char align_, bool cls_, int y0_, int dline_)
 {
  int dx=0;                             // left space
  int dx2=0;                            // half char width
  int maxc_;                            // max. chars in one line
+ OLEDDISPLAY_COLOR colorf=WHITE;       // front color
+ OLEDDISPLAY_COLOR colorb=BLACK;       // background color
  String s_=text_;                      // remaining chars of text
  String s1;                            // text in this line
  int lenc_;                            // string length in chars
@@ -357,25 +373,34 @@ void Screen096::screenXY(int line_, const String &text_,
   clear();                             // clear screen
   for(int i=0; i<DOT_COUNTER_MAX; i++) dotCounter[i]=0;
  }
- if(line_==1)
+ if(line_==1 || line_==0 || line_==-1)
  {//-----write title--------------------------------------------
+  if(line_==-1)
+  {
+   colorf=BLACK;
+   colorb=WHITE;
+  }
   setFont(fontTitle);                  // set title font
   dx2=getFontWidth()/2;                // half char
   maxc_=int(getWidth()/getFontWidth());// chars at 1 line
   if(align_=='c'){ if((lenc_<maxc_) &&((lenc_&1)>0)) dx=dx2; }
   if(clr_) { 
-   setColor(BLACK);
-   fillRect(0,0,128,16);               //clear line 1
-   setColor(WHITE);
+   setColor(colorb);
+   if(line_==0) fillRect(1,1,getWidth()-2,14); //clear line 1
+   else fillRect(0,0,getWidth(),16);        //clear line 1
   }
+  setColor(colorf);
   s1=mytrim(maxc_, s_, align_);
   drawString(dx,0,s1);
+  if(line_==0) drawRect(0,0,getWidth(),16); // border line 1
   //-----draw lines, show display-------------------------------
   display();                           // show buffer
+  setColor(WHITE);
  }
  else
  {//-----write text---------------------------------------------
-  screenX(line_-1, text_, align_, cls_, y0_, dline_);
+  if(line_>0) line_--; else line_++; 
+  screenX(line_, text_, align_, cls_, y0_, dline_);
  }
 }
 

@@ -1,4 +1,4 @@
-//_____D1_oop66_oled096_screen16Dot_1.ino_____191221-191221_____
+//_____D1_oop66_oled096_screen16Dot_1.ino_____191221-191223_____
 // * Show text and dots on an oled 0,96" (128x64 pixel):
 //   line 2 and line 3 with text: max. 21 characters, 8 px high
 //   16..18 dots in line 1 with speed 0,25s/dot
@@ -11,7 +11,7 @@
 // See also: https://blog.hau.me/2018/12/26/i2c-oled-display-on-a-wemos-d1-mini/
 //           http://oleddisplay.squix.ch/#/home (Font Converter)
 // Created by Karl Hartinger, December 21, 2019
-// Update: -
+// Update: 2019-12-23 class screen096 updated
 // Released into the public domain.
 
 #include "src/screen096/D1_class_Screen096.h"
