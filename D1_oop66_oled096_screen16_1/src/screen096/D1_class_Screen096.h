@@ -1,6 +1,8 @@
-//_____D1_class_Screen96.h____________________191217-191217_____
-// The class Screen96 extends the classes SSD1306Wire and
+//_____D1_class_Screen096.h___________________191217-191223_____
+// The class Screen096 extends the classes SSD1306Wire and
 // OLEDDisplay with screen methods to write text on the display.
+// * line number <0: display line inverted
+// * line 0 = line 1 with border
 // Also included in this file:
 // * a table to convert codepage 437 to utf8 and vice versa
 //   (table_cp437_utf8)
@@ -10,7 +12,7 @@
 // Hardware: (1) WeMos D1 mini
 //           (2) OLED Shield: SSD1306, 128x64 pixel, I2C
 // Created by Karl Hartinger, December 17, 2019.
-// Last modified: -
+// Last modified: 2019-12-23 add screenXXDot lines
 // Released into the public domain.
 
 #ifndef D1_CLASS_SCREEN096_H
@@ -32,6 +34,7 @@
 #define FONT_CP437_TEXT      ((uint8_t *) fontKH_cp437_8x6)
 #define FONT_UTF8_TITLE      ((uint8_t *) fontKH_utf8_16x8)
 #define FONT_UTF8_TEXT       ((uint8_t *) fontKH_utf8_8x6)
+#define DOT_COUNTER_MAX      9         // dot screen + 8 lines
 
 class Screen096 : public SSD1306Wire {
  protected:
@@ -39,13 +42,14 @@ class Screen096 : public SSD1306Wire {
   uint8_t *fontTitle;                  // fontKH_cp437_16x7
   uint8_t *fontText;                   // fontKH_cp437_8x6
   bool    _cp437;                      // true: use CP437
-  int     dotCounter;                  // counter for dot screen
+  int     dotCounter[DOT_COUNTER_MAX]; // counter for 0=dot screen
+                                       // or 1..8 dot lines
  public:
  //-----constructor & co---------------------------------------
  //SDA=D2=GPIO4, SCL=D1=GPIO5
   Screen096() : SSD1306Wire(0x3C,SDA,SCL,GEOMETRY_128_64) {
    _cp437=false;
-   dotCounter=0;
+   for(int i=0; i<DOT_COUNTER_MAX; i++) dotCounter[i]=0;
   };
  protected:
   void   setup();                      // setup properties
@@ -60,28 +64,43 @@ class Screen096 : public SSD1306Wire {
   void screen14(int line_, const String &text_);
   void screen14(int line_, const String &text_, char align_);
   void screen14(int line_, const String &text_, char align_, bool cls_);
+  void screen14Dot(int line_);
+  void screen14Dot(int line_, int initvalue);
+  void screen14Dot0(int line_);
   void screen15Clear(int line_, const String &text_);
   void screen15Clear(int line_, const String &text_, char align_);
   void screen15(int line_, const String &text_);
   void screen15(int line_, const String &text_, char align_);
   void screen15(int line_, const String &text_, char align_, bool cls_);
+  void screen15Dot(int line_);
+  void screen15Dot(int line_, int initvalue);
+  void screen15Dot0(int line_);
   void screen16Clear(int line_, const String &text_);
   void screen16Clear(int line_, const String &text_, char align_);
   void screen16(int line_, const String &text_);
   void screen16(int line_, const String &text_, char align_);
   void screen16(int line_, const String &text_, char align_, bool cls_);
- 
+  void screen16Dot(int line_);
+  void screen16Dot(int line_, int initvalue);
+  void screen16Dot0(int line_);
+  
   //-----one-color-screen only with text (no title)-------------
   void screen7Clear(int line_, const String &text_);
   void screen7Clear(int line_, const String &text_, char align_);
   void screen7(int line_, const String &text_);
   void screen7(int line_, const String &text_, char align_);
   void screen7(int line_, const String &text_, char align_, bool cls_);
+  void screen7Dot(int line_);
+  void screen7Dot(int line_, int initvalue);
+  void screen7Dot0(int line_);
   void screen8Clear(int line_, const String &text_);
   void screen8Clear(int line_, const String &text_, char align_);
   void screen8(int line_, const String &text_);
   void screen8(int line_, const String &text_, char align_);
   void screen8(int line_, const String &text_, char align_, bool cls_);
+  void screen8Dot(int line_);
+  void screen8Dot(int line_, int initvalue);
+  void screen8Dot0(int line_);
 
  //-----special screens-----------------------------------------
  void dotClear(void);                  // clear, draw border
@@ -93,6 +112,8 @@ class Screen096 : public SSD1306Wire {
   //-----helper methodes----------------------------------------
   void screenX(int line_, const String &text_, char align_, bool cls_, int y0_, int dline_);
   void screenXY(int line_, const String &text_, char align_, bool cls_, int y0_, int dline_);
+  void screenXDot(int y0_, int dline_, int line_);
+  void screenXYDot(int y0_, int dline_, int line_);
   String mytrim(int max_, String txt_, char align_);
 
   //-----font specific methods----------------------------------  

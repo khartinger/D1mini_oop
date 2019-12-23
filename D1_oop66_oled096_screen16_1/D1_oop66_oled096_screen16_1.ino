@@ -12,7 +12,7 @@
 // See also: https://blog.hau.me/2018/12/26/i2c-oled-display-on-a-wemos-d1-mini/
 //           http://oleddisplay.squix.ch/#/home (Font Converter)
 // Created by Karl Hartinger, December 17, 2019
-// Update: -
+// Update: 2019-12-23 Class Screen096 updated
 // Released into the public domain.
 
 #include "src/screen096/D1_class_Screen096.h"

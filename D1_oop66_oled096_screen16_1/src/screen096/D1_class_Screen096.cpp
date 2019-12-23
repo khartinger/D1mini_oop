@@ -1,17 +1,20 @@
-//_____D1_class_Screen96.cpp__________________191217-191217_____
-// The class Screen96 extends the classes SSD1306Wire and
+//_____D1_class_Screen096.cpp_________________191217-191223_____
+// The class Screen096 extends the classes SSD1306Wire and
 // OLEDDisplay with screen methods to write text on the display.
+// * line number <0: display line inverted
+// * line 0 = line 1 with border
 // Also included in this file:
 // * a table to convert codepage 437 to utf8 and vice versa
 //   (table_cp437_utf8)
 // * four fonts
-//   fontKH_cp437_16x7, fontKH_cp437_8x6, fontKH_utf8_16x8
-//   fontKH_utf8_12x6
+//   fontKH_cp437_16x7, fontKH_cp437_8x6, 
+//   fontKH_utf8_16x8,  fontKH_utf8_12x6
 // Hardware: (1) WeMos D1 mini
 //           (2) OLED Shield: SSD1306, 128x64 pixel, I2C
 // Created by Karl Hartinger, December 17, 2019.
-// Last modified: -
+// Last modified: 2019-12-23 add screenXXDot lines
 // Released into the public domain.
+
 #include "D1_class_Screen096.h"         //
 
 void Screen096::begin()
@@ -21,7 +24,7 @@ void Screen096::begin()
  this->_sda = SDA;
  this->_scl = SCL;
  _cp437=false;
- dotCounter=0;
+ for(int i=0; i<DOT_COUNTER_MAX; i++) dotCounter[i]=0;
  init();
  flipScreenVertically();
  if(_cp437)
@@ -69,6 +72,24 @@ void Screen096::screen14(int line_, const String &text_,
   char align_, bool cls_)
 { screenXY(line_, text_, align_, cls_, 16, 12); }
 
+void Screen096::screen14Dot(int line_)
+{ 
+  if(line_==1) screenXYDot(0,16,line_);
+  else screenXYDot(16-12,12,line_); 
+}
+
+void Screen096::screen14Dot(int line_, int initvalue)
+{
+ if(line_>0 && line_<DOT_COUNTER_MAX) {
+  for(int i=0; i<initvalue; i++)
+  {
+   dotCounter[line_]=i;
+   screen14Dot(line_);
+  }
+ }
+ screen14Dot(line_);
+}
+
 //_____display: title (16char) + 5 lines (21char), no border____
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
 void Screen096::screen15Clear(int line_, const String &text_)
@@ -87,6 +108,24 @@ void Screen096::screen15(int line_, const String &text_,
   char align_, bool cls_)
 { screenXY(line_, text_, align_, cls_, 18, 9); }
 
+void Screen096::screen15Dot(int line_)
+{ 
+  if(line_==1) screenXYDot(0,16,line_);
+  else screenXYDot(18-9,9,line_); 
+}
+
+void Screen096::screen15Dot(int line_, int initvalue)
+{
+ if(line_>0 && line_<DOT_COUNTER_MAX) {
+  for(int i=0; i<initvalue; i++)
+  {
+   dotCounter[line_]=i;
+   screen15Dot(line_);
+  }
+ }
+ screen15Dot(line_);
+}
+
 //_____display: title + 6 lines, no border______________________
 void Screen096::screen16Clear(int line_, const String &text_)
 { screen16(line_, text_, 'l', true); }
@@ -103,6 +142,24 @@ void Screen096::screen16(int line_, const String &text_, char align_)
 void Screen096::screen16(int line_, const String &text_, 
   char align_, bool cls_)
 { screenXY(line_, text_, align_, cls_, 16, 8); }
+
+void Screen096::screen16Dot(int line_)
+{ 
+  if(line_==1) screenXYDot(0,16,line_);
+  else screenXYDot(16-8,8,line_); 
+}
+
+void Screen096::screen16Dot(int line_, int initvalue)
+{
+ if(line_>0 && line_<DOT_COUNTER_MAX) {
+  for(int i=0; i<initvalue; i++)
+  {
+   dotCounter[line_]=i;
+   screen16Dot(line_);
+  }
+ }
+ screen16Dot(line_);
+}
 
 // *************************************************************
 // one-color-screen only with text (no title)
@@ -125,6 +182,21 @@ void Screen096::screen7(int line_, const String &text_,
   char align_, bool cls_)
 { screenX(line_, text_, align_, cls_, 0, 9); }
 
+void Screen096::screen7Dot(int line_)
+{ screenXDot(0,9,line_); }
+
+void Screen096::screen7Dot(int line_, int initvalue)
+{
+ if(line_>0 && line_<DOT_COUNTER_MAX) {
+  for(int i=0; i<initvalue; i++)
+  {
+   dotCounter[line_]=i;
+   screen7Dot(line_);
+  }
+ }
+ screen7Dot(line_);
+}
+
 //_____display: 8 lines, no border______________________________
 void Screen096::screen8Clear(int line_, const String &text_)
 { screen8(line_, text_, 'l', true); }
@@ -142,6 +214,23 @@ void Screen096::screen8(int line_, const String &text_,
   char align_, bool cls_)
 { screenX(line_, text_, align_, cls_, 0, 8); }
 
+
+void Screen096::screen8Dot(int line_)
+{ screenXDot(0,8,line_); }
+
+void Screen096::screen8Dot(int line_, int initvalue)
+{
+ if(line_>0 && line_<DOT_COUNTER_MAX) {
+  for(int i=0; i<initvalue; i++)
+  {
+   dotCounter[line_]=i;
+   screen8Dot(line_);
+  }
+ }
+ screen8Dot(line_);
+}
+
+
 //**************************************************************
 // special screens
 //**************************************************************
@@ -156,7 +245,7 @@ void Screen096::dotClear()
 // dotCounter is set to 0, NO dot is plotted
 void Screen096::dotClear(String title_)
 {
- dotCounter=0;                         // new start
+ dotCounter[0]=0;                      // new start
  clear();                              // clear display buffer
  setColor(BLACK);                      // background=black
  fillRect(0,0,128,64);                 // clear all
@@ -170,18 +259,18 @@ void Screen096::dotClear(String title_)
 //_____draw a dot_______________________________________________
 void Screen096::dot()
 {
- if(dotCounter>=100) 
+ if(dotCounter[0]>=100) 
  {
-  dotCounter=0;
+  dotCounter[0]=0;
   setColor(BLACK);
-  fillRect(0,16,128,48);                //clear title
+  fillRect(0,16,128,48);               // clear title
   setColor(WHITE);
   drawRect(0,16,128,48);               // draw a rectangle...
  }
- int xpos =  4 + 6*(dotCounter%20);    // cursor pos x
- int ypos = 20 + 8*int(dotCounter/20); // cursor pos y
+ int xpos =  4 + 6*(dotCounter[0]%20); // cursor pos x
+ int ypos = 20 + 8*int(dotCounter[0]/20); // cursor pos y
  drawString(xpos,ypos,DOT);            // draw dot
- dotCounter++;                         // next vlue
+ dotCounter[0]++;                      // next vlue
  display();                            // show buffer
 }
 
@@ -218,28 +307,40 @@ void Screen096::screenX(int line_, const String &text_,
  int dx2=0;                            // half char width
  int dy1=0;                            // start pixel of line
  int maxc_;                            // max. chars in one line
+ OLEDDISPLAY_COLOR colorf=WHITE;       // front color
+ OLEDDISPLAY_COLOR colorb=BLACK;       // background color
  String s_=text_;                      // remaining chars of text
  String s1;                            // text in this line
  int lenc_;                            // string length in chars
  lenc_=utf8length(s_);                 //  string length in chars
  bool clr_=isLowerCase(align_);        // clear area before writing
  align_=tolower(align_);               // c,r,l
- if(cls_) clear();                     // clear screen
+ if(cls_) {                            // do clear screen
+  clear();                             // clear screen
+  for(int i=0; i<DOT_COUNTER_MAX; i++) dotCounter[i]=0;
+ }
+ if(line_<0)
+ {
+  colorf=BLACK;
+  colorb=WHITE;
+  line_=-line_;
+ }
  setFont(fontText);                    // set text font
  dy=getFontHeight();                   // char height
  dx2=getFontWidth()/2;                 // half char
  maxc_=int(getWidth()/getFontWidth()); // max. chars in one line
  //-----write text----------------------------------------------
+ setColor(colorf);
  for(int l1=line_; l1<9; l1++)
  {
   dy1=y0_+(l1-1)*dline_;
   if(dy1+dy>64) break;
   if(align_=='c'){ if((lenc_<maxc_) &&((lenc_&1)>0)) dx=dx2; }
   if(clr_) { 
-   setColor(BLACK);
-   fillRect(0,dy1,128,dline_+1);   //clear line
-   setColor(WHITE);
+   setColor(colorb);
+   fillRect(0,dy1,128,dline_);         // clear line
   }
+  setColor(colorf);
   s1=mytrim(maxc_, s_, align_);
   drawString(dx,dy1,s1);
   if(lenc_<=maxc_) break;
@@ -247,43 +348,129 @@ void Screen096::screenX(int line_, const String &text_,
   lenc_=utf8length(s_);
  }
  //-----draw lines, show display--------------------------------
- display();                                 // show buffer
+ display();                            // show buffer
+ setColor(WHITE);
 }
 
 //_____display lines (21char)___________________________________
 // align: l=left, c=center, r=right, L=left+overwrite, C, R...
+// line number <0: invert line
 void Screen096::screenXY(int line_, const String &text_, 
  char align_, bool cls_, int y0_, int dline_)
 {
  int dx=0;                             // left space
  int dx2=0;                            // half char width
  int maxc_;                            // max. chars in one line
+ OLEDDISPLAY_COLOR colorf=WHITE;       // front color
+ OLEDDISPLAY_COLOR colorb=BLACK;       // background color
  String s_=text_;                      // remaining chars of text
  String s1;                            // text in this line
  int lenc_;                            // string length in chars
  lenc_=utf8length(s_);                 //  string length in chars
  bool clr_=isLowerCase(align_);        // clear area before writing
  align_=tolower(align_);               // c,r,l
- if(cls_) clear();                     // clear screen
- if(line_==1)
+ if(cls_) {                            // do clear screen
+  clear();                             // clear screen
+  for(int i=0; i<DOT_COUNTER_MAX; i++) dotCounter[i]=0;
+ }
+ if(line_==1 || line_==0 || line_==-1)
  {//-----write title--------------------------------------------
+  if(line_==-1)
+  {
+   colorf=BLACK;
+   colorb=WHITE;
+  }
   setFont(fontTitle);                  // set title font
   dx2=getFontWidth()/2;                // half char
   maxc_=int(getWidth()/getFontWidth());// chars at 1 line
   if(align_=='c'){ if((lenc_<maxc_) &&((lenc_&1)>0)) dx=dx2; }
   if(clr_) { 
-   setColor(BLACK);
-   fillRect(0,0,128,16);               //clear line 1
-   setColor(WHITE);
+   setColor(colorb);
+   if(line_==0) fillRect(1,1,getWidth()-2,14); //clear line 1
+   else fillRect(0,0,getWidth(),16);        //clear line 1
   }
+  setColor(colorf);
   s1=mytrim(maxc_, s_, align_);
   drawString(dx,0,s1);
+  if(line_==0) drawRect(0,0,getWidth(),16); // border line 1
   //-----draw lines, show display-------------------------------
   display();                           // show buffer
+  setColor(WHITE);
  }
  else
  {//-----write text---------------------------------------------
-  screenX(line_-1, text_, align_, cls_, y0_, dline_);
+  if(line_>0) line_--; else line_++; 
+  screenX(line_, text_, align_, cls_, y0_, dline_);
+ }
+}
+
+//_____plot dots in a text line_________________________________
+void Screen096::screenXDot(int y0_, int dline_, int line_)
+{
+ int dx=0;                             // left space
+ int dx1;                              // width of 1 char
+ int xpos;                             // DOT x-position
+ int ypos;                             // DOT y-position
+ int maxc_;                            // max. chars in one line
+ if((line_<1)||(line_>DOT_COUNTER_MAX)) return;
+ setFont(fontText);                    // set text font
+ dx1=getFontWidth();                   // width of 1 char
+ maxc_=int(getWidth()/dx1);            // chars at 1 line
+ if((dotCounter[line_]>=maxc_)||(dotCounter[line_]<1))
+  dotCounter[line_]=0;
+ ypos=y0_+dline_*(line_-1);            // y position of dot
+ xpos=dx+dx1*dotCounter[line_];        // x position of dot
+ if(dotCounter[line_]==0)
+ {
+  setColor(BLACK);
+  fillRect(0,ypos,getWidth(),dline_);  // clear line
+  setColor(WHITE);
+ }
+ else
+ {
+  drawString(xpos,ypos,DOT);           // draw dot
+ }
+ //-----show display--------------------------------------------
+ dotCounter[line_]++;                  // next value
+ display();                            // show buffer
+}
+
+//_____plot dots in a title or text line________________________
+void Screen096::screenXYDot(int y0_, int dline_, int line_)
+{
+ int dx=0;                             // left space
+ int dx1;                              // width of 1 char
+ int xpos=0;                           // DOT x-position
+ int ypos=y0_;                         // DOT y-position
+ int maxc_;                            // max. chars in one line
+ if(line_==1)
+ {//-----write title--------------------------------------------
+  setFont(fontTitle);                  // set title font
+  dx1=getFontWidth();                  // width of 1 char
+  xpos = dx + dx1*dotCounter[1];       // cursor pos x
+  ypos = y0_;                          // cursor pos y
+  maxc_=int(getWidth()/dx1);           // chars at 1 line
+   if(dotCounter[line_]>=maxc_ ||dotCounter[line_]<1)
+  dotCounter[line_]=0;
+ if(dotCounter[line_]==0)
+  {
+   dotCounter[1]=0;
+   setColor(BLACK);
+   fillRect(0,0,getWidth(),16);        // clear title
+   setColor(WHITE);
+   drawRect(0,0,getWidth(),16);        // draw a rectangle
+  }
+  else
+  {
+   drawString(xpos,ypos,DOT);          // draw dot
+  }
+  dotCounter[1]++;                    // next value
+  //-----show display line 1------------------------------------
+  display();                           // show buffer
+ }
+ else
+ {//-----write line >1------------------------------------------
+  screenXDot(y0_, dline_, line_);
  }
 }
 
@@ -612,12 +799,10 @@ String Screen096::CP437ToString(uchar cp437)
 {
  uchar utf8[4];
  int imax=CP437ToUtf8(cp437, utf8);
-Serial.print("imax=");Serial.println(imax);
  String s1((char *)0);
  s1.reserve(imax+1);
  for(int i=0; i<imax; i++)
  {
-Serial.println(((int)utf8[i]),16);
   s1+=String((char)utf8[i]);
  }
  return s1;
