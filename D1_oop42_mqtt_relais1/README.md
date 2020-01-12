@@ -1,57 +1,53 @@
-# D1 mini: Switch a relay by MQTT
-Version 2018-11-11, file: `D1_oop42_mqtt_relais1.ino`   
+# D1 mini: Switch a lamp by a relay and MQTT
+Version 2020-01-10 D1_oop42_mqtt_relais1.ino   
 [German version](./LIESMICH.md "German version")   
 
-This example shows how to switch a lamp on or off by a D1 mini with relay-shield and a mqtt message.   
-Additional the D1 mini measures the alternating current by a current transformer ASM-010 and a selfmade amplifier-shield with a INA122.   
+This example uses a D1 mini as MQTT client to switch a lamp via a relay and measure the current. If the D1 mini receives a topic `relay1/set/relay` with the content (payload) `on`, it switches the relay on, with `off` it switches the relay off and with payload `toggle` it toggles the relay.   
 
-__Important__: This sketch needs a mqtt broker, for example a Raspberry Pi as access point for WLAN `Raspi10` with password `12345678`, a static ip address `10.1.1.1` and mosquitto installed. See [https://github.com/khartinger/Raspberry-as-mqtt-broker](https://github.com/khartinger/Raspberry-as-mqtt-broker "Raspberry pi as broker")   
-__*You also can change WiFi data to your network values*__ in line   
-`MqttClientKH client("..ssid..", "..password..","mqtt server name");`    
+The two LEDS show the system state:   
+* DUO-LED red blinking: No connection to WiFi (WLAN)
+* DUO-LED red: MQTT error
+* DUO-LED green: MQTT connection to broker OK. The green LED blinks every 2.5 seconds to show, that the D1 mini is working.   
 
-## MQTT messages   
-To test the system you have to
-* connect to the WLAN (see above)   
-* open a command window   
-(MS Windows cmd or a putty connection to Raspberry Pi with user `pi`, password `raspberry` or `..ras..` or something else)   
-* show all relay1 messages entering `mosquitto_sub -h 10.1.1.1 -t relay1/# -v`    
-* open a second command window   
-* send one of the following commands e.g.   
-`mosquitto_pub -h 10.1.1.1 -t relay1/get -m help`   
-* In the first window you should see something like 
-```
-pi@raspberrypi:~ $ mosquitto_sub -h 10.1.1.1 -t relay1/# -v
-relay1/get help
-relay1/ret/help get: help|version|function|ip|all|lamp|current|current0|
-set: lamp|current0|
-```
+__*Don't forget to change WiFi data to your network values*__ in line   
+`MqttClientKH2 client("..ssid..", "..password..","mqtt server name");`  
 
-### _set_ Commands   
-* Topic `relay1/set/lamp` with payload `on`, `off` or `toggle` sets the relay on, off or changes the state.   
-* Topic `relay1/set/current0` sets the "current is zero" limit (value in mA). Current values from 0 to this limit give the result "no current" (lamp=0). This is necessary because of electrical interferences.   
+![D1mini with INA122- and relay shield](./images/D1_mqtt_relais1_2.png "D1mini with INA122- and relay shield")    
+_Figure 1: D1mini with INA122- and relay shield_   
 
-### _get_ Requests   
-* Topic `relay1/get` with payload `help` lists all mqtt commands, that the system understands.   
-* Topic `relay1/get` with payload `version` gives software date and filename.   
-* Topic `relay1/get` with payload `function` describes what the application does.   
-* Topic `relay1/get` with payload `ip` gives the ip address of the D1 mini.   
-* Topic `relay1/get` with payload `all` sends all get messages.    
-* Topic `relay1/get` with payload `lamp` gives the state of the lamp as 0 or 1 (lamp is off or on).   
-* Topic `relay1/get` with payload `current` gives the current value in mA.   
-* Topic `relay1/get` with payload `current0` gives the present "current is zero" limit in mA.  
+### Hardware
+1. WeMos D1 mini   
+2. relay shield   
+3. Selfmade shield D1_INA122_V3_191108 (or D1_INA122_V2_180924) or current transformer (zB ASM-010) at analog-in   
+4. (green) LED at D8, Duo-LED at D6 (green)/D7 (red)   
 
-## Hardware
-(1) WeMos D1 mini   
-(2) Relais shield   
-(3) D1_INA122_V2 180924 (Selfmade) or Analog in and Current transformer ASM-010   
-![D1 INA122 relay](./images/D1_ina122_relay.png "D1mini with selfmade INA122 shield and relay shield")   
-_D1mini with selfmade INA122 shield, relay shield, current transformer ASM-010 and lamp_
+### Details about MQTT-messages   
+* All topics for D1 mini start with `relay1/`   
+* All MQTT-__requests__ use the same topic `relay1/get`, the type of information is given by the payload.   
+*Possible payloads are defined in array sGet[].*   
+* Answers are sent by using the topic `relay1/ret/[sGet]`. [sGet] names the type of information. The payload contents the result.   
+* Commands for the D1 mini use the topic `relay1/set/[sSet]`. [sGet] names the type of command. The payload contents the value to be set.   
+*Possible payloads are defined in array sSet[].*   
 
-## Software
-This sketch uses the classes   
-* `D1_class_MqttClientKH` and `PubSubClient`    
-* `D1_class_Relais1` and `D1_class_Ain`    
-* `D1_class_Statemachine`   
+__*Examples*__  
+* Topic `relay1/get` with content (payload) `help` results in a topic `relay1/ret/help` with payload `get: help|version|function|ip|all|relay|current|current0|
+set: relay|current0|`
+* Topic `relay1/set/relay` with payload `on` results in an answer topic `relay1/ret/relay` with  payload `1` and the relay is switched on.
 
-(see directory `src`)   
+### Test with mosquitto publisher and subscriber
+1. Connect to the Wifi (WLAN), that the MQTT server uses.
+2. Open a console in Windows or Linux and show (subscribe) all messages for the D1 mini:   
+`mosquitto_sub -h 10.1.1.1 -t "relay1/#" -v`  
+3. Open a second console in Windows or Linux.   
+Switch on the relay with    
+`mosquitto_pub -h 10.1.1.1 -t "relay1/set/relay" -m on`  
+Switch off the relay with    
+`mosquitto_pub -h 10.1.1.1 -t "relay1/set/relay" -m off`  
+Toggle the relay with   
+`mosquitto_pub -h 10.1.1.1 -t "relay1/set/relay" -m toggle`  
 
+### Software
+This example uses the following files (classes):   
+* `PubSubClient` and `D1_class_MqttClientKH2` (see directory `src\mqtt2`)   
+* `D1_class_Relay1` and `D1_class_Ain` (see directory `src\relay1` and `src\ain`)   
+* `D1_class_Statemachine` (see directory `src\statemachine`)   

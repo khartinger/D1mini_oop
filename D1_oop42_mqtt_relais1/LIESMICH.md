@@ -1,58 +1,52 @@
-# D1 mini: Schalten eines Relais mit MQTT
-Version 2018-11-11, Datei: `D1_oop42_mqtt_relais1.ino`   
+# D1 mini: Schalten einer Lampe &uuml;ber ein Relais mit MQTT
+Version 2020-01-10 D1_oop42_mqtt_relais1.ino    
 [English version](./README.md "English version")   
 
-Dieses Beispiel zeigt das Schalten einer Lampe (auch 230V) durch einen D1 mini mit Relais-Shield und MQTT Nachrichten.
-Zus&auml;tzlich misst der D1 mini den Wechselstrom mit Hilfe eines Stromwandlers ASM-010 und einem selbstgebauten INA122-Verst&auml;rker-Shield.   
+Dieses Beispiel verwendet einen D1 mini als MQTT Client zum Schalten einer Lampe &uuml;ber ein Relais und zum Messen des Stromes. Wenn der D1 mini ein Topic `relay1/set/relay` mit dem Inhalt (Payload) `on` empf&auml;ngt, schaltet er das Ralais ein, mit `off` schaltet er das Relais aus und mit `toggle` um.   
+Die beiden Leds dienen dazu, den Systemstatus anzuzeigen:   
+* DUO-LED rot blinkend: Nicht mit WLAN verbunden
+* DUO-LED rot: MQTT Fehler
+* DUO-LED gr&uuml;n: MQTT Verbindung zum Broker OK. Die gr&uuml;ne Led blinkt alle 2,5 Sekunden kurz auf, um anzuzeigen, dass der D1 mini funktioniert.   
 
-__Wichtig__: Dieser Sketch ben&ouml;tigt einen Broker, zB einen Raspberry Pi als Access Point f&uuml;r ein WLAN `Raspi10` mit dem Passwort `12345678`, einer statischen Adresser `10.1.1.1` und installiertem Mosquitto. Siehe [https://github.com/khartinger/Raspberry-as-mqtt-broker](https://github.com/khartinger/Raspberry-as-mqtt-broker "Raspberry pi as broker")   
-__*Anpassung der WiFi-Daten an ein eigenes Netzwerk:*__ Daten &auml;ndern in Zeile   
-`MqttClientKH client("..ssid..", "..password..","mqtt server name");`   
+__*Nicht vergessen: Die WLAN-Daten an das eigene Netzwerk anpassen*__ in der Zeile:   
+`MqttClientKH2 client("..ssid..", "..password..","mqtt server name");`  
 
-## MQTT Nachrichten   
-Um das System zu testen sind folgende Schritte erforderlich:   
-* Verbinden mit dem WLAN (siehe oben)   
-* &Ouml;ffnen eines Kommando-Fensters   
-(MS Windows cmd oder eine putty-Verbindung zum Raspberry Pi mit dem User `pi`, Passwort `raspberry` oder `..ras..` oder einem anderen)   
-* Anzeigen aller relay1-Nachrichten durch Eingabe von `mosquitto_sub -h 10.1.1.1 -t relay1/# -v`    
-* &Ouml;ffnen eines zweiten Kommando-Fensters   
-* Senden eines der unten stehenden Kommandos zB   
-`mosquitto_pub -h 10.1.1.1 -t relay1/get -m help`   
-* Im ersten Fenster sollte folgende Anzeige erscheinen: 
-```
-pi@raspberrypi:~ $ mosquitto_sub -h 10.1.1.1 -t relay1/# -v
-relay1/get help
-relay1/ret/help get: help|version|function|ip|all|lamp|current|current0|
-set: lamp|current0|
-```
+![D1mini mit INA122- und Relais-Shield](./images/D1_mqtt_relais1_2.png "D1mini mit INA122- und Relais-Shield")    
+_Bild 1: D1mini mit INA122- und Relais-Shield_   
 
+### Hardware
+1. WeMos D1 mini   
+2. Relais Shield   
+3. Selbstbau-Shield D1_INA122_V3_191108 (oder D1_INA122_V2_180924) oder Stromwandler (zB ASM-010) am Analog-In-Eingang   
+4. (gr&uuml;ne) LED an D8, Duo-LED an D6 (gr&uuml;n)/D7 (rot)   
 
-### _set_ Kommandos   
-* Topic `relay1/set/lamp` mit payload `on`, `off` oder `toggle` schaltet das Relais ein, aus oder um.   
-* Topic `relay1/set/current0` setzt das "Strom Null" Limit (Wert in mA). Stromwerte von 0 bis zu diesem Wert ergeben "Kein Strom" (lamp=0). Dies ist wegen der kleinen Wandler-Spannungen und den damit verbundenen Einstreuungen sinnvoll.   
+### Details zu den MQTT-Nachrichten   
+* Alle Topics f&uuml;r MQTT-Nachrichten an den D1 mini beginnen mit `relay1/`   
+* Alle MQTT-__Anfragen__ verwenden das selbe Topic `relay1/get`, der Typ der gew&uuml;nschte Information wird in der Payload angegeben.   
+*M&ouml;gliche Payloads sind im Array sGet[] definiert.*   
+* Antworten auf Anfragen werden unter dem Topic `relay1/ret/[sGet]` versendet, wobei [sGet] den Typ von Information darstellt. Die Payload enth&auml;lt das Ergebnis.   
+* Befehle an den D1 mini verwenden das Topic `relay1/set/[sSet]`, wobei [sGet] den Typ von Information darstellt. Die Payload enth&auml;lt den einzustellenden Wert.   
+*M&ouml;gliche Payloads sind im Array sSet[] definiert.*   
 
-### _get_ Anfragen   
-* Topic `relay1/get` mit payload `help` listet alle MQTT-Befehle auf, die das System versteht.   
-* Topic `relay1/get` mit payload `version` ergibt das Software-Datum und den Dateinamen.   
-* Topic `relay1/get` mit payload `function` ergibt eine kurze Beschreibung, was das System macht.   
-* Topic `relay1/get` mit payload `ip` ergibt die IP-Adresse des D1 mini.   
-* Topic `relay1/get` mit payload `all` bewirkt ein Aussenden aller m&ouml;glichen GET-Nachrichten.    
-* Topic `relay1/get` mit payload `lamp` ergibt den Zustand der Lampe als 0 oder 1 (Lampe ist aus oder ein).   
-* Topic `relay1/get` mit payload `current` ergibt den Stromwert in mA.   
-* Topic `relay1/get` mit payload `current0` ergibt das Stromlimit f&uuml;r die Anzeige "Null" in mA.  
+__*Beispiele*__  
+* Das Topic `relay1/get` mit Inhalt (Payload) `help` ergibt die Antwort Topic `relay1/ret/help` mit dem Inhalt (Payload) `get: help|version|function|ip|all|relay|current|current0|
+set: relay|current0|`
+* Das Topic `relay1/set/relay` mit Inhalt (Payload) `on` ergibt die Antwort Topic `relay1/ret/relay` mit dem Inhalt (Payload) `1` und schaltet das Relais ein.
 
-## Hardware
-(1) WeMos D1 mini   
-(2) Relais Shield   
-(3) D1_INA122_V2 180924 (Selbstbau) oder Analog in mit Stromwandler ASM-010   
-![D1 INA122 relay](./images/D1_ina122_relay.png "D1mini mit selfmade INA122 shield and relay shield")   
-_Bild 1: D1mini mit Eigenbau INA122 Shield, Relais Shield, Stromwandler ASM-010 und Lampe_
+### Test mit Mosquitto Publisher und Subscriber
+1. Mit dem Wifi (WLAN) verbinden in dem sich der MQTT Server befindet.
+2. In Windows oder Linux ein Konsolenfenster aufmachen und alle Nachrichten f&uuml;r den D1mini anzeigen (subscribe, anfordern):   
+`mosquitto_sub -h 10.1.1.1 -t "relay1/#" -v`  
+3. In Windows oder Linux ein zweites Konsolenfenster aufmachen.   
+Das Relais einschalten mit    
+`mosquitto_pub -h 10.1.1.1 -t "relay1/set/relay" -m on`  
+Das Relais ausschalten mit    
+`mosquitto_pub -h 10.1.1.1 -t "relay1/set/relay" -m off`  
+Das Relais umschalten mit    
+`mosquitto_pub -h 10.1.1.1 -t "relay1/set/relay" -m toggle`  
 
-## Software
-Dieser Sketch verwendet die Klassen      
-* `D1_class_MqttClientKH` und `PubSubClient`    
-* `D1_class_Relais1` und `D1_class_Ain`    
-* `D1_class_Statemachine`   
-
-(Siehe Verzeichnis `src`)   
-
+### Software
+Dieses Besispiel verwendet die folgenden Dateien (Klassen):   
+* `PubSubClient` und `D1_class_MqttClientKH2` (siehe Verzeichnis `src\mqtt2`)   
+* `D1_class_Relay1` und `D1_class_Ain` (siehe Verzeichnisse `src\relay1` und `src\ain`)   
+* `D1_class_Statemachine` (siehe Verzeichnis `src\statemachine`)   

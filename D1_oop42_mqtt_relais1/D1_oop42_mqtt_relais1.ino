@@ -1,33 +1,44 @@
-//_____D1_oop42_mqtt_relais1.ino______________181101-181101_____
-// D1 mini as MQTT client switches a lamp via a relay and 
-// measures the current.
+//_____D1_oop42_mqtt_relais1.ino______________181101-200109_____
+// This example uses a D1 mini as MQTT client to switch a lamp 
+// via a relay and measure the current. If the D1 mini receives 
+// a topic `relay1/set/relay` with the content (payload) `on`,
+// it switches the relay on, with `off` it switches the relay
+// off and with payload `toggle` it toggles the relay.   
+// The two LEDS show the system state:   
+// * DUO-LED red blinking: No connection to WiFi (WLAN)
+// * DUO-LED red: MQTT error
+// * DUO-LED green: MQTT connection to broker OK.
+//   The green LED blinks every 2.5 seconds to show,
+//   that the D1 mini is working. 
 // Hardware: (1) WeMos D1 mini
-//           (2) Relais shield
+//           (2) Relay shield
 //           (3) D1_INA122_V2 180924 (Selfmade) or Analog in
 //               and Current transformer ASM-010
+//           (4) LED at D8, Duo-LED at D6-green/D7-red
 // Important: Example needs a broker!
 // Created by Karl Hartinger, November 01, 2018
-// Last modified: -
+// Modified: 191227 use MqttClientKH2 instead of MqttClientKH
+//           200103 use class Relay1 instead of Relais1
+//           200109 LED at D8, Duo-LED at D6-green/D7-red
 // Released into the public domain.
 #define  DEBUG42        true  //false
-#define  VERSION42      "2018-11-01 D1_oop42_mqtt_relais1"
-#define  FUNCTION42     "Relay \"relay1\" waits for \"relay1/set/lamp on|off|toggle\""
+#define  VERSION42      "2020-01-09 D1_oop42_mqtt_relais1"
+#define  FUNCTION42     "Relais \"relay1\" empfaengt \"relay1/set/relay on|off|toggle\""
 #define  GETMAX42       8
 #define  SETMAX42       2
-const String sGet[GETMAX42]={"help","version","function","ip","all","lamp","current","current0"};
-const String sSet[SETMAX42]={"lamp","current0"};
+const String sGet[GETMAX42]={"help","version","function","ip","all","relay","current","current0"};
+const String sSet[SETMAX42]={"relay","current0"};
 
-#include "src/mqtt/D1_class_MqttClientKH.h"
-#include "src/relais1/D1_class_relais1.h"
+#include "src/mqtt2/D1_class_MqttClientKH2.h"
+#include "src/relay1/D1_class_relay1.h"
 #include "src/statemachine/D1_class_Statemachine.h"
 
 //-----MQTT-----------------------------------------------------
-//MqttClientKH client("..ssid..", "..password..","mqttservername");
-MqttClientKH client("Raspi10", "12345678","10.1.1.1");
-
+//MqttClientKH2 client("..ssid..", "..password..","mqttservername");
+MqttClientKH2 client("Raspi10", "12345678","10.1.1.1");
 //......supported mqtt topics...................................
 #define TOPIC_R1_ALL             ("relay1/#")
-#define TOPIC_R1_BASIC           ("relay1")
+#define TOPIC_R1_BASIC           ("relay1/")
 #define TOPIC_R1_GET             ("relay1/get")
 #define TOPIC_R1_SET             ("relay1/set/")
 #define TOPIC_R1_RET             ("relay1/ret/")
@@ -38,7 +49,7 @@ MqttClientKH client("Raspi10", "12345678","10.1.1.1");
 #define NR_R1_FUNCTION           2     // # mqtt send function
 #define NR_R1_IP                 3     // # mqtt send ip
 #define NR_R1_GETALL             4     // # mqtt send all topics
-#define NR_R1_LAMP               5     // # mqtt send lamp state
+#define NR_R1_RELAY              5     // # mqtt send relay state
 #define NR_R1_CURRENT            6     // # mqtt send current
 #define NR_R1_CURRENT0           7     // # mqtt current on limit
 
@@ -52,44 +63,55 @@ int     mqttSend=NR_R1_NOTHING;        // 0=nothing
 Statemachine statemachine(STATE_MAX, STATE_DELAY); //1..600
 
 //-----sensors, actors------------------------------------------
+#define  PIN_LED1       D8
+#define  PIN_LED_G      D6
+#define  PIN_LED_R      D7
 #define  PIN_RELAIS     D1
-Relais1  relais1(PIN_RELAIS);          // relais shield D1
+Relay1  relais1(PIN_RELAIS,2000,50);   // relais shield
 
 //_____process all subscribed incoming messages_________________
 void callback(char* topic, byte* payload, unsigned int length)
 {
  //-----convert topic and payload to String---------------------
- String sTopic=String(topic);
- String sPayload="";
- for (int i=0; i<length; i++) sPayload+=(char)payload[i];
+ char cPayload[length+1];              // char-array for payload 
+ strncpy(cPayload,(char*)payload,length); // copy payload bytes
+ cPayload[length]=0;                   // set end char
  if(DEBUG42)
-  Serial.println("Message topic '"+sTopic+"': "+sPayload);
+ { Serial.print("Message topic '"); Serial.print(topic);
+   Serial.print("': "); Serial.println(cPayload);
+ }
  //-----get request---------------------------------------------
- if(sTopic==TOPIC_R1_GET)
+ if(strcmp(topic,TOPIC_R1_GET)==0)
  {
   int i;
   for(i=0; i<GETMAX42; i++) {
-   if(sGet[i]==sPayload) break;
+   if(strcmp(sGet[i].c_str(), cPayload)==0) break;
   }
   if(i<GETMAX42) {                     // get payload found
    mqttSend|=(1<<i);                   // trigger get request
   }
  }
  //-----commands: set request-----------------------------------
- if(sTopic==(TOPIC_R1_SET+sSet[0]))    // lamp
- {
-  if(sPayload=="on"){relais1.on(); mqttSend|=(1<<NR_R1_LAMP);}
-  if(sPayload=="off"){relais1.off();mqttSend|=(1<<NR_R1_LAMP);}
-  if(sPayload=="toggle") {relais1.toggle();mqttSend|=(1<<NR_R1_LAMP);}
+ int lenSet=strlen(TOPIC_R1_SET);
+ if(strncmp(topic,TOPIC_R1_SET,lenSet)==0)
+ {//-----set topic found----------------------------------------
+  char* settype=topic;                 // 
+  settype+=lenSet;                     // topic command
+  if(strcmp(settype,sSet[0].c_str())==0)
+  {//.....light on/off/toggle...................................
+   if(strcmp(cPayload,"on")==0){relais1.on(); mqttSend|=(1<<NR_R1_RELAY);Serial.println("R ein");}
+   if(strcmp(cPayload,"off")==0){relais1.off();mqttSend|=(1<<NR_R1_RELAY);Serial.println("R aus");}
+   if(strcmp(cPayload,"toggle")==0) {relais1.toggle();mqttSend|=(1<<NR_R1_RELAY);Serial.println("R um");}
+  }
+  if(strcmp(settype,sSet[1].c_str())==0)
+  {//.....set current xxx.......................................
+   int ion=atoi(cPayload);
+   if((ion>0)&&(ion<=relais1.getCurrentMax()))
+    relais1.setCurrentOn(ion);
+   mqttSend|=(1<<NR_R1_CURRENT0);
+  } 
  }
- if(sTopic==(TOPIC_R1_SET+sSet[1]))    // strom0
- {
-  int ion=sPayload.toInt();
-  if((ion>0)&&(ion<=relais1.getCurrentMax()))
-   relais1.setCurrentOn(ion);
-  mqttSend|=(1<<NR_R1_CURRENT0);
- }
-}
+} 
 
 //_____send MQTT message________________________________________
 bool sendMQTT(int what_)
@@ -130,7 +152,7 @@ bool sendMQTT(int what_)
   for(int i=0; i<GETMAX42; i++) p1+=sGet[i]+"|";
   p1+="\r\nset: ";
   for(int i=0; i<SETMAX42; i++) p1+=sSet[i]+"|";
-  r_&=client.publishString(t1,p1);     // publish
+  client.publishString(t1,p1);         // publish
   mqttSend&=(~mask1);                  // stopp sending anyway
  }
  num1=NR_R1_VERSION; //-----send version------------------------
@@ -156,16 +178,16 @@ bool sendMQTT(int what_)
  if((what_&mask1)>0)                   // send this topic?
  {
   t1=String(TOPIC_R1_RET)+sGet[num1];
-  p1=client.getMyIP();
+  p1=client.getsMyIP();
   r_&=client.publishString(t1,p1);     // publish
   mqttSend&=(~mask1);                  // stopp sending anyway
  }
- num1=NR_R1_LAMP; //-----send relais (lamp) state-------------
+ num1=NR_R1_RELAY; //-----send relais (lamp) state--------------
  mask1=1<<num1;                        // mask
  if((what_&mask1)>0)                   // send this topic?
  {
   t1=String(TOPIC_R1_RET)+sGet[num1];
-  p1=String(relais1.getLampstate());
+  p1=String(relais1.getRelaystate());
   r_&=client.publishString(t1,p1);     // publish
   mqttSend&=(~mask1);                  // stopp sending anyway
  }
@@ -190,18 +212,47 @@ bool sendMQTT(int what_)
  return r_;
 }
 
+//_____blink blue LED Quickly___________________________________
+void blink()
+{
+ for(int i=0; i<8; i++) {
+  digitalWrite(PIN_LED_R, 1);               // LED on
+  delay(100);
+  digitalWrite(PIN_LED_R, 0);               // LED off
+  delay(150);
+  }
+}
+
 //_____setup Serial, WLAN and MQTT clients______________________
 void setup() 
 {
  {Serial.begin(115200); Serial.println("\n"+String(VERSION42));}
  //-----set actors----------------------------------------------
+ pinMode(PIN_LED1, OUTPUT);
+ pinMode(PIN_LED_G, OUTPUT);
+ pinMode(PIN_LED_R, OUTPUT);
+ pinMode(D4, OUTPUT); digitalWrite(D4, 0);
+ //-----turn off lamp-------------------------------------------
+ relais1.on();
+ //-----test leds-----------------------------------------------
+ digitalWrite(PIN_LED1, 1);                 // 2. green led on
+ digitalWrite(PIN_LED_G, 1);                // green on
+ digitalWrite(PIN_LED_R, 0);                // red off
+ delay(500);
+ digitalWrite(PIN_LED1, 0);                 // 2. green led off
+ digitalWrite(PIN_LED_R, 1);                // orange
+ delay(500);
+ digitalWrite(PIN_LED_G, 0);                // just red
+ delay(500);
  //-----setup mqtt----------------------------------------------
  client.addSubscribe(String(TOPIC_R1_ALL));
+ client.addPublish(String(TOPIC_R1_RET));
  client.setCallback(callback);
- client.reconnect();
- //-----turn off relay/lamp-------------------------------------
- relais1.off();
+ while(!client.connectWiFiMQTT()) blink();
+ if(DEBUG42) Serial.println("setup() finished -> start loop()\n");
 }
+
+int redLED=0;
 
 //_____main loop________________________________________________
 void loop() 
@@ -209,21 +260,40 @@ void loop()
  int state=statemachine.loopBegin();        // state begin 
  //=====do every state==========================================
  //if(DEBUG42) Serial.print(String(state)+": ");
- if(client.isConnected()) //must always be called (for receive!)
- {
-  //.....send MQTT answer.......................................
-  if((state%STATE_MQTTSEND)==0) {
-   if(mqttSend>0) sendMQTT(mqttSend);
-  }
+ if(!client.isWiFiConnected()) 
+ {//=====MQTT client is NOT connected to WiFi (WLAN)============
+  digitalWrite(PIN_LED_R, redLED);          // no WiFi...
+  redLED=1-redLED;                          // blink quickly red
  }
- //=====do every second=========================================
- if((state%5)==0)
- {
-  //.....check lamp state.......................................
-  if(relais1.changed()) {
-   mqttSend|=(1<<NR_R1_LAMP); 
+ else
+ {//====MQTT client is connected to WiFi (WLAN)=================
+  if(client.isConnected()) //must always be called (for receive!)
+  {
+   digitalWrite(PIN_LED_G, 1);
+   digitalWrite(PIN_LED_R, 0);
+   //.....send MQTT answer......................................
+   if((state%STATE_MQTTSEND)==0) {
+    if(mqttSend>0) sendMQTT(mqttSend);
+   }
   }
+  else
+  {
+   digitalWrite(PIN_LED_G, 0);
+   digitalWrite(PIN_LED_R, 1);
+  }
+  //=====do every 0.5 seconds===================================
+  if((state%5)==0)
+  {
+   //.....check lamp state......................................
+   if(relais1.changed()) {
+    mqttSend|=(1<<NR_R1_RELAY); 
+   }
+  }
+  //=====blink LED==============================================
+  if((state%25)==0) digitalWrite(PIN_LED1, 1);
+  else digitalWrite(PIN_LED1, 0);
  }
+ 
  //=====prepare for next state and wait=========================
  statemachine.loopEnd();                    // state end
  //if(DEBUG42) Serial.println();

@@ -83,7 +83,7 @@ int Statemachine::getDuration() {return(millis()-beginMillis);}
 // returns the number of the actual state
 int Statemachine::loopBegin()
 {
- beginMillis=millis();                       // get start "time"
+ beginMillis=millis();                 // get start "time"
  return stateCounter;
 }
 
@@ -92,10 +92,14 @@ int Statemachine::loopBegin()
 unsigned long Statemachine::loopEnd()
 {
  stateCounter=this->add(1);
- long loopDelay=stateDelay-(millis()-beginMillis); // rest delay
- if(loopDelay<0) loopDelay=0;               // time >= 0
- delay(loopDelay);                          // wait
- return(millis()-beginMillis);
+ unsigned long endMillis=millis();
+ unsigned long duration=0xFFFFFFFF;    // -1=0xFFFFFFFF
+ if(endMillis>=beginMillis) duration=endMillis-beginMillis;
+ else duration=endMillis+(duration-beginMillis);
+ unsigned long loopDelay=0;
+ if(stateDelay>duration) loopDelay=stateDelay-duration;
+ delay(loopDelay);                     // wait
+ return duration;
 }
 
 //_____Add a number of states to actual state___________________

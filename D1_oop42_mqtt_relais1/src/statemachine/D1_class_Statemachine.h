@@ -19,6 +19,7 @@ class Statemachine {
   int stateMin;                        // 1st counter value
   int stateMax;                        // last vounter value
   int stateDelay;                      // delay for one state
+ public: //.....ToDo...just for test!.....
   unsigned long beginMillis;           // start time of state
  public:
   //-----constructor & co---------------------------------------
