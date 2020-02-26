@@ -1,4 +1,4 @@
-//_____D1_oop28_test_IO_Shield_oled1.ino______171022-180518_____
+//_____D1_oop28_test_IO_Shield_oled1.ino______171022-200226_____
 // Function: Red LED lights up for 2s, green LED 0,5s, ...
 //           If button is pressed, both LEDs are on until button
 //           is released (=> yellow light, if DUO-LED is used).
@@ -9,12 +9,13 @@
 //               SCL=D1=DGPIO5, SDA=D2=GPIO4, OLED_RESET GPIO0
 // Software: counter loop 0..<25, delay 100ms
 // Created by Karl Hartinger, October 22, 2017
-// Last modified 2018-05-18: Move class files to /src/...
+// Modified 2018-05-18: Move class files to /src/...
+// 2020-02-26: Replace Files D1_class_Screen by D1_class_Screen1a
 // Released into the public domain.
 #include "src/din/D1_class_din.h"
 #include "src/dout/D1_class_dout.h"
-#include "src/screen1/D1_class_Screen1.h"
-#define OLED_RESET 0                        //OLED_RESET=D3=GPIO0
+#include "src/screen1a/D1_class_Screen1a.h"
+#define OLED_RESET 0              //OLED_RESET=D3=GPIO0
 //-----for program state control--------------------------------
 #define STATE_NO      -1          // nothing to do
 #define STATE_0        0          // 0...1,9s
@@ -34,7 +35,7 @@ void setup() {
  display_.screen221(2,"KAINDORF",'c'); // line 2
  display_.screen221(3,"?",'c');        // line 3 (LED green)
  display_.screen221(4,"?",'c');        // line 4 (LED red)
- display_.screen221(5,"180518 ht",'c');// line 5 (version)
+ display_.screen221(5,"200226 ht",'c');// line 5 (version)
 }
 
 void loop() 
