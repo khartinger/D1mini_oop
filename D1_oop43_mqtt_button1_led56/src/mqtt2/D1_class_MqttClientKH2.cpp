@@ -1,21 +1,25 @@
-//_____D1_class_MqttClientKH.cpp______________170721-181101_____
-// The class MqttClient extends class PubSubClient for
+//_____D1_class_MqttClientKH2.cpp______________170721-191225_____
+// The class MqttClientKH2 extends class PubSubClient for
 //  easy use of mqtt.
 // You can use all commands of class PubSubClient as well.
 // When PubSubClient lib is installed,
-// delete PubSubClient files in directory src/mqtt!
+// delete PubSubClient files in directory src/mqtt
 // Created by Karl Hartinger, July 21, 2017.
-// Last change: 2018-11-01 getMyIP() added
-// Released into the public domain.
+// Last changes: 2018-11-01 add getMyIP()
+//               2019-12-22 add getsMac()
+//               2019-12-23 separate WiFi and MQTT methods
+//               2019-12-25 update connectWiFiMQTT()
 // Hardware: D1 mini
-#include "D1_class_MqttClientKH.h"
+// Released into the public domain.
+
+#include "D1_class_MqttClientKH2.h"
 
 //**************************************************************
 //    constructor & co
 //**************************************************************
 
 //_____constructor______________________________________________
-MqttClientKH::MqttClientKH():PubSubClient(d1miniClient)
+MqttClientKH2::MqttClientKH2():PubSubClient(d1miniClient)
 {
  strcpy(ssid_, MQTT_SSID);
  strcpy(pass_, MQTT_PASS);
@@ -25,7 +29,7 @@ MqttClientKH::MqttClientKH():PubSubClient(d1miniClient)
 }
 
 //_____constructor 2____________________________________________
-MqttClientKH::MqttClientKH(char* ssid, char* pwd, 
+MqttClientKH2::MqttClientKH2(char* ssid, char* pwd, 
   char* mqtt_server="localhost"):PubSubClient(d1miniClient)
 {
  strcpy(ssid_, ssid);
@@ -36,7 +40,7 @@ MqttClientKH::MqttClientKH(char* ssid, char* pwd,
 }
 
 //_____constructor 3____________________________________________
-MqttClientKH::MqttClientKH(char* ssid, char* pwd, 
+MqttClientKH2::MqttClientKH2(char* ssid, char* pwd, 
   char* mqtt_server="localhost", 
   int port=1883):PubSubClient(d1miniClient)
 {
@@ -48,114 +52,161 @@ MqttClientKH::MqttClientKH(char* ssid, char* pwd,
 }
 
 //_____setup (called by constructor)____________________________
-void MqttClientKH::setup()
+void MqttClientKH2::setup()
 {
- millis_lastConnected = 0;
+ millisLastConnected = 0;
  numSub_=0;
  numPub_=0;
- setup_wifi();
+ sMyIP="xxx.xxx.xxx.xxx";
+ randomSeed(micros());                 // start random numbers
+ sMQTTClientName="D1mini_";
+ sMQTTClientName+=String(random(0xffff), HEX);
+ wifiConnectedNew=true;
+ wifiConnectedNewExtern=true;
+ WiFiSetup();
  setServer(mqtt_, port_);
 }
 
 //**************************************************************
 // setter and getter methods
 //**************************************************************
-// NEW 180428
-String MqttClientKH::getsClientState(int client_state) 
+
+//_____get MQTT client state as string__________________________
+String MqttClientKH2::getsState()
 {
  String s1;
+ int client_state=state();
  s1="#"+String(client_state)+" ";
  switch(client_state)
  {
   case MQTT_CONNECTION_TIMEOUT: // -4
-   s1+="MQTT connection timeout"; break;
+   s1+="MQTT timeout connection"; break;
   case MQTT_CONNECTION_LOST:            // -3
-   s1+="MQTT connection lost"; break;
+   s1+="MQTT lost connection"; break;
   case MQTT_CONNECT_FAILED:             // -2
-   s1+="MQTT connect failed"; break;
+   s1+="MQTT failed to connect"; break;
   case MQTT_DISCONNECTED: // -1
    s1+="MQTT disconnected"; break;
   case MQTT_CONNECTED: // 0
    s1+="MQTT connected"; break;
   case MQTT_CONNECT_BAD_PROTOCOL: //    1
-   s1+="MQTT CONNECT_BAD_PROTOCOL"; break;
+   s1+="MQTT bad protocol"; break;
   case MQTT_CONNECT_BAD_CLIENT_ID: //   2
-   s1+="MQTT CONNECT_BAD_CLIENT_ID"; break;
+   s1+="MQTT bad client ID"; break;
   case MQTT_CONNECT_UNAVAILABLE: //     3
-   s1+="MQTT CONNECT_UNAVAILABLE"; break;
+   s1+="MQTT unavailable"; break;
   case MQTT_CONNECT_BAD_CREDENTIALS: // 4
-   s1+="MQTT CONNECT_BAD_CREDENTIALS"; break;
+   s1+="MQTT bad credentials"; break;
   case MQTT_CONNECT_UNAUTHORIZED: //    5
-   s1+="MQTT connnect unauthorized"; break;
+   s1+="MQTT unauthorized"; break;
  default: s1+="Unknown state"; break;
  }
  return s1;
 }
 
 //_____client IP address________________________________________
-String MqttClientKH::getMyIP() { return sMyIP; }
+String MqttClientKH2::getsSSID() { return String(ssid_); }
 
-//**************************************************************
-// methods to setup WLAN and mqtt connection
-//**************************************************************
+//_____client IP address________________________________________
+String MqttClientKH2::getsMyIP() { return sMyIP; }
 
-//_____connect to the WiFi network______________________________
-bool MqttClientKH::setup_wifi()
+//_____get string with D1mini MAC address_______________________
+String MqttClientKH2::getsMac()
 {
- if(WiFi.status()==WL_CONNECTED) return true;
+ String s1((char *)0);                 // help string
+ byte mac[6];                          // mac bytes
+ WiFi.macAddress(mac);
+ s1.reserve(18);
+ for(int i=0; i<6; i++)
+ {
+  s1+=String(mac[i],16);
+  s1+=":";
+ }
+ s1[17]=0;
+ return s1;
+}
+
+//**************************************************************
+// methods for Wifi (WLAN)
+//**************************************************************
+
+//_____setup wifi mode__________________________________________
+//bool MqttClientKH2::WiFiSetup(String sWifiHostname)
+bool MqttClientKH2::WiFiSetup()
+{
+ if(WiFi.status()==WL_CONNECTED) return false; // no setup done
  delay(10);
- if(DEBUG_MQTT) Serial.println("\nConnecting to "+String(ssid_));
- WiFi.mode(WIFI_STA);                              // NEW 180428
- WiFi.begin(ssid_, pass_);
- //-----try to connect to WLAN (access point)-------------------
- int i=TIMEOUT_WIFI_CONNECT_MS/200;
- while((WiFi.status()!=WL_CONNECTED) && (i>0))
- {
-  delay(200);
-  i--;
-  if(DEBUG_MQTT){Serial.print("."); if(i%50==0) Serial.println("");}
- }
- //-----connected to WLAN (access point)?-----------------------
- if(i<1)
- { //-----not connected to WLAN---------------------------------
-  if(DEBUG_MQTT) Serial.println("No connection - time-out!");
-  return false;
- }
- //-----success WiFi new connection/reconnect-------------------
- sMyIP=WiFi.localIP().toString();
- if(DEBUG_MQTT)Serial.println("\nConnected! IP address is "+sMyIP);
+ WiFi.mode(WIFI_STA);
+ // WiFi.config(ip, gateway, subnet);  // skipp for dhcp
+ WiFi.begin(ssid_, pass_);             // start connecting
+ wifiConnectedNew=true;
+ wifiConnectedNewExtern=true;
+ //wifi_station_set_auto_connect(true);
+ //wifi_station_set_hostname(sWifiHostname.c_str());
+ String s1=String(ssid_);
+ if(DEBUG_MQTT)Serial.println("\nWiFi setup, connecting to "+s1);
  return true;
 }
 
-//_____check for connect, if not: try to reconnect______________
-bool MqttClientKH::reconnect()
+//_____is client connected to WiFi (WLAN)?______________________
+bool MqttClientKH2::isWiFiConnected()
 {
- //-----when connected, return----------------------------------
- if(connected()) { return true; }
- //-----WiFi connected?-----------------------------------------
- if(!setup_wifi()) return false;
- //-----WiFi yes, mqtt no---------------------------------------
- if(DEBUG_MQTT)Serial.println("MQTT: Not connected - reconnect...");
- //-----MQTT: try to send all PubSub topics---------------------
- if(!sendPubSubTopics())
+ //-----is client connected to WiFi?----------------------------
+ if(WiFi.status()==WL_CONNECTED)
  {
-  if(DEBUG_MQTT) { Serial.println("failed, client state: "+getsClientState(state())); };
-  return false;
+  if(wifiConnectedNew)
+  {
+   sMyIP=WiFi.localIP().toString();
+   wifiConnectedNew=false;
+   wifiConnectedNewExtern=true;
+   if(DEBUG_MQTT)Serial.println("\nNew connection! IP address is "+sMyIP);
+  }
+  return true;
  }
- return true;
+ //-----client NOT connected to WiFi----------------------------
+ wifiConnectedNew=true;
+ wifiConnectedNewExtern=true;
+ //newConnected=true;
+ return false;
 }
+
+//_____is WiFi new connectioned?________________________________
+bool MqttClientKH2::isWiFiConnectedNew()
+{
+ if(wifiConnectedNew || wifiConnectedNewExtern) {
+  wifiConnectedNewExtern=false;
+  return true;
+ }
+ wifiConnectedNewExtern=false;
+ return false;
+}
+
+//_____WiFi signal strength_____________________________________
+String MqttClientKH2::getsSignal() 
+{
+ if(WiFi.status()==WL_CONNECTED) return String(WiFi.RSSI());
+ return String("?");
+}
+
+//**************************************************************
+// methods for mqtt connection
+//**************************************************************
 
 //_____is mqtt connection ok? (no: reconnect)___________________
-bool MqttClientKH::isConnected()
+// MUST always be called in main loop (for receive!)
+bool MqttClientKH2::isConnected()
 {
  long now = millis();
+ //-----WiFi connected?-----------------------------------------
+ if(!isWiFiConnected()) return false;
  //-----check for mqtt connection-------------------------------
  if (!connected())
  {
-  if (now - millis_lastConnected > MQTT_RECONNECT_MS) 
+  if(DEBUG_MQTT) Serial.println("WiFi ok, MQTT not connected");
+  if (now - millisLastConnected > MQTT_RECONNECT_MS) 
   {
-   millis_lastConnected=now;
-   if(reconnect()) millis_lastConnected=0;
+   millisLastConnected=now;
+   if(reconnect()) millisLastConnected=0;
   }
  }
  //-----if connected to broker, do loop function----------------
@@ -167,11 +218,69 @@ bool MqttClientKH::isConnected()
  return false;
 }
 
+
+//_____wait for WiFi connection, then connect to MQTT server____
+// return true=success, false on error
+bool MqttClientKH2::connectWiFiMQTT()
+{
+ if(isConnected()) return true;
+ if(!isWiFiConnected())
+ {
+  WiFiSetup();
+  //-----try to connect to WLAN (access point)------------------
+  int i=TIMEOUT_WIFI_CONNECT_MS/200;
+  while((WiFi.status()!=WL_CONNECTED) && (i>0))
+  {
+   delay(200);
+   i--;
+   if(DEBUG_MQTT){Serial.print("."); if(i%50==0) Serial.println("");}
+  }
+  //-----connected to WLAN (access point)?----------------------
+  if(i<1)
+  { //-----not connected to WLAN--------------------------------
+   if(DEBUG_MQTT) Serial.println("No connection - time-out!");
+   return false;
+  }
+  //-----success WiFi new connection/reconnect------------------
+  wifiConnectedNew=true;
+  wifiConnectedNewExtern=true;
+  sMyIP=WiFi.localIP().toString();
+ }
+ if(DEBUG_MQTT)Serial.println("\nConnected! IP address is "+sMyIP);
+ //-----connect to MQTT server----------------------------------
+ if(connect(sMQTTClientName.c_str()))
+ {
+  if(sendPubSubTopics()) return true;  // send topic info
+ }
+ if(DEBUG_MQTT) {Serial.println("Topics failture, state: "+getsState());};
+ return reconnect();
+}
+
+//_____check for connect, if not: try to reconnect______________
+bool MqttClientKH2::reconnect()
+{
+ //-----when connected, return----------------------------------
+ if(PubSubClient::connected()) { return true; }
+ if(DEBUG_MQTT) Serial.println("reconnect...");
+ //-----WiFi connected?-----------------------------------------
+ if(!isWiFiConnected()) return false;  // no WiFi
+ //-----WiFi yes, mqtt no---------------------------------------
+ if(DEBUG_MQTT)Serial.println("MQTT: Not connected - reconnect...");
+ if(!PubSubClient::connect(sMQTTClientName.c_str())) return false;
+ //-----MQTT: try to send all PubSub topics---------------------
+ if(!sendPubSubTopics())
+ {
+  if(DEBUG_MQTT) {Serial.println("failed, state: "+getsState());};
+  return false;
+ }
+ return true;
+}
+
 //-----MQTT: send all PubSub topics (e.g. on reconnect)---------
-bool MqttClientKH::sendPubSubTopics()
+bool MqttClientKH2::sendPubSubTopics()
 {
  //-----If no wifi ClientId: create a random client ID----------
- String clientId=sClientName;
+ String clientId=sMQTTClientName;
  if(clientId=="")
  {
   randomSeed(micros());           // start random numbers
@@ -200,9 +309,9 @@ bool MqttClientKH::sendPubSubTopics()
 
 //-----send all PubSub topics to Serial-------------------------
 // just for test purpose
-void MqttClientKH::printPubSubTopics2Serial(String clientId="")
+void MqttClientKH2::printPubSubTopics2Serial(String clientId="")
 {
- if(clientId=="") clientId=sClientName;
+ if(clientId=="") clientId=sMQTTClientName;
  Serial.println("====="+clientId+" connected======");
  Serial.println("-----publish topic list ("+String(numPub_)+")-------");
  for(int i=0; i<numPub_; i++)
@@ -224,7 +333,7 @@ void MqttClientKH::printPubSubTopics2Serial(String clientId="")
 //**************************************************************
 
 //_____add a (String) topic to subscribe array__________________
-bool MqttClientKH::addSubscribe(String topic)
+bool MqttClientKH2::addSubscribe(String topic)
 {
  //-----is topic already in subscribe array?--------------------
  for(int i=0; i<numSub_; i++)
@@ -242,7 +351,7 @@ bool MqttClientKH::addSubscribe(String topic)
 
 //_____convert String to array and unsubscribe__________________
 // return: true=unscribed, false=not
-bool MqttClientKH::delSubscribe(String topic)
+bool MqttClientKH2::delSubscribe(String topic)
 {
  //-----is topic in subscribe array?----------------------------
  int i=0;
@@ -257,14 +366,18 @@ bool MqttClientKH::delSubscribe(String topic)
  for(int j=i; j<numSub_; j++)
   aTopicSub_[j]=aTopicSub_[j+1];
  //-----subscribe from broker-----------------------------------
- char cTopic[1+TOPIC_MAXLEN];               // helper array
+ char cTopic[1+TOPIC_MAXLEN];          // helper array
  topic.toCharArray(cTopic,TOPIC_MAXLEN);
  unsubscribe(cTopic);
 }
 
 //_____add a (String) topic to publish array____________________
+bool MqttClientKH2::addPublish(String topic)
+{ return addPublish(topic,String(""),true); }
+
+//_____add a (String) topic to publish array____________________
 // if topic exists --> replace payload
-bool MqttClientKH::addPublish(String topic, String payload="", 
+bool MqttClientKH2::addPublish(String topic, String payload, 
      bool retain=true)
 {
  //-----is topic already in subscribe array?--------------------
@@ -291,7 +404,7 @@ bool MqttClientKH::addPublish(String topic, String payload="",
 
 //_____delete publish topic from list___________________________
 // return: true=deleted, false=not
-bool MqttClientKH::delPublish(String topic)
+bool MqttClientKH2::delPublish(String topic)
 {
  //-----is topic in publish array?------------------------------
  int i=0;
@@ -310,19 +423,19 @@ bool MqttClientKH::delPublish(String topic)
 }
 
 //_____convert String to array and publish (without register)___
-bool MqttClientKH::publishString(String topic, String payload)
+bool MqttClientKH2::publishString(String topic, String payload)
 {
  return(publishString(topic, payload, false));
 }
 
 //_____convert String to array and publish______________________
-bool MqttClientKH::publishString(
+bool MqttClientKH2::publishString(
   String topic, String payload, bool retain=false)
 {
  //Serial.println("publishString: topic="+topic+", payload="+payload+", retain="+retain);
  if(payload.length()<0) return false;
- char top[1+TOPIC_MAXLEN];                  // helper array
- char msg[1+PAYLOAD_MAXLEN];                // helper array
+ char top[1+TOPIC_MAXLEN];             // helper array
+ char msg[1+PAYLOAD_MAXLEN];           // helper array
  topic.toCharArray(top,TOPIC_MAXLEN);
  payload.toCharArray(msg,PAYLOAD_MAXLEN);
  //Serial.println("publishString: published"); 
@@ -331,7 +444,7 @@ bool MqttClientKH::publishString(
 
 //_____set array of registered subscribe topics_________________
 // return: number of registered subcribe topics
-int MqttClientKH::setSubscribe(String aTopicSub[], int num)
+int MqttClientKH2::setSubscribe(String aTopicSub[], int num)
 {
  for(int i=0; i<num; i++)
  {
@@ -353,7 +466,7 @@ int MqttClientKH::setSubscribe(String aTopicSub[], int num)
 
 //_____set array of registered subscribe topics_________________
 // return: number of registered subcribe topics
-int MqttClientKH::setPublish(
+int MqttClientKH2::setPublish(
   String aTopicPub[], String aPayload[], int num)
 {
  for(int i=0; i<num; i++)
@@ -379,9 +492,9 @@ int MqttClientKH::setPublish(
 }
 
 //_____convert String to array and subscribe____________________
-void MqttClientKH::subscribeString(String topic)
+void MqttClientKH2::subscribeString(String topic)
 {
- char top[1+PAYLOAD_MAXLEN];          // helper array
+ char top[1+PAYLOAD_MAXLEN];           // helper array
  topic.toCharArray(top,TOPIC_MAXLEN);
  subscribe(top);
 }
