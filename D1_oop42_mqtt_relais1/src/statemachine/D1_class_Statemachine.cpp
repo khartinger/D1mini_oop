@@ -1,10 +1,12 @@
-﻿//_____D1_class_Statemachine.cpp______________181002-181019_____
-// The class Statemachine helps to make a simple state counter.
+﻿//_____D1_class_Statemachine.cpp______________181002-200225_____
+// The class Statemachine helps to build a simple state counter.
 // It counts from 1 to state_max (incl.) and waits
-// state_delay milliseconds on every state.
+// "state_delay" milliseconds for every state.
 // Created by Karl Hartinger, October 02, 2018.
 // Modified 2018-10-05: some set/get added
-// Modified 2018-10-19: stateMin, add() added
+//          2018-10-19: stateMin, add() added
+//          2020-01-19: getBeginMillis() added
+//          2020-02-25: getStateMin() added
 // Released into the public domain.
 #include "D1_class_Statemachine.h"
 
@@ -71,10 +73,12 @@ bool Statemachine::setState(int new_state)
  return false;
 }
 
+int Statemachine::getStateMin()   { return stateMin; }
 int Statemachine::getStateMax()   { return stateMax; }
 int Statemachine::getStateDelay() { return stateDelay; }
 int Statemachine::getState()      { return stateCounter; }
 int Statemachine::getDuration() {return(millis()-beginMillis);}
+unsigned long Statemachine::getBeginMillis(){ return beginMillis; } 
 
 //**************************************************************
 //     working methods

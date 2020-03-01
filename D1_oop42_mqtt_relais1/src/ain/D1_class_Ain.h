@@ -1,9 +1,10 @@
-﻿//_____D1_class_Ain.h_________________________171129-171129_____
+﻿//_____D1_class_Ain.h_________________________171129-180929_____
 // The class Ain reads an analog value and converts it to
 // a voltage using a straight line.
 // Default points for the stright line are 0/0.00 and 1023/3.20
 // and can be changed according to your requirements. 
 // Created by Karl Hartinger, November 29, 2017.
+// Modified 2018-09-29: add getVoltage(int ain_1023)
 // Released into the public domain.
 #ifndef D1_CLASS_AIN_H
 #define D1_CLASS_AIN_H
@@ -54,5 +55,6 @@ class Ain {
   //-----some more methods--------------------------------------
   void   setDecimals(int decimal_places);
   int    getDecimals();
+  float  getVoltage(int ain_1023);
 };
 #endif

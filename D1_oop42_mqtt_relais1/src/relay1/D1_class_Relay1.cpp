@@ -6,9 +6,10 @@
 // lampOn, lampOff, lampToggle...measure current, switch relay
 // Hardware: (1) WeMos D1 mini
 //           (2) Relais shield
-//           (3) D1_INA122_V2 180924 (Selfmade) or Analog In
-//               and current transformer (ASM-010)
+//           (3) Current transformer (ASM-010) and selfmade 
+//               shield D1_INA122_V2 180924 at Analog In
 //
+// Uses class Ain (files D1_class_Ain.*)
 // Created by Karl Hartinger, November 11, 2018.
 // Modified: 2020-01-03 separate relay and lamp function
 // Released into the public domain.
@@ -19,7 +20,7 @@
 //    constructor & co
 //**************************************************************
 
-//_____constructor (default digital out is D7, not inverted)____
+//_____constructor (default digital out is D1, not inverted)____
 Relay1::Relay1() {
   int pin=RELAY1_PIN_RELAY;
   setup(pin, RELAY1_MA_MAX, RELAY1_MA_LAMP_ON); 
