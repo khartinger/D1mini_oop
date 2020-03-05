@@ -1,4 +1,4 @@
-﻿//_____D1_class_StatemachineBlink.h___________200224-200224_____
+﻿//_____D1_class_StatemachineBlink.h___________200224-200303_____
 // The class StatemachineBlink helps to blink a LED in a state 
 // machine. You need to know...
 // ... the pin number, where the LED is wired (e.g. D4)
@@ -8,21 +8,22 @@
 // ... the duration for LED is off (in states)
 // ... the number of blinks (-1 = endless)
 // Created by Karl Hartinger, February 24, 2020.
-// Modified -
+// Modified 2020-02-27 setStateStart() added
+//          2020-03-03 goOn() added
 // Released into the public domain.
 #ifndef D1_CLASS_STATEMACHINEBLINK_H
 #define D1_CLASS_STATEMACHINEBLINK_H
 #include "Arduino.h"
 #include "D1_class_Statemachine.h"
 
-#define SMB_DEBUG             true     // 
+#define SMB_DEBUG            false     // true
 #define SMB_PIN                 D4     // pin number blue LED
 #define SMB_INVERT            true     // 0=LED on, 1 =LED off
 #define SMB_STATE_START          1     // 1. state: led on 
-#define SMB_STATES_ON            8     // 8x100ms = 0.8s
-#define SMB_STATES_OFF           2     // 2x100ms = 0.2s
+#define SMB_STATES_ON            2     // e.g. 2x100ms = 0.2s
+#define SMB_STATES_OFF           8     // e.g. 8x100ms = 0.8s
 #define SMB_BLINK_ENDLESS       -1     // -1=blink endless
-
+#define SMB_STATE_INVALID      NAN     // invalid state
 class StatemachineBlink {
  protected:
   //-----properties---------------------------------------------
@@ -36,6 +37,11 @@ class StatemachineBlink {
   int  nextStateOn_;                   // num of next state "on"
   int  nextStateOff_;                  // num of next state "off"
   bool restart_;                       // true: do restart
+  bool started_;                       // true: blinking started
+  bool off_;                           // true: LED turned off 
+  int  stateOff_;                      // state when led off
+  bool ledIsOn_;                       // actual led state
+  bool ledBeforeOff_;                  // old led state
  public:
   //-----constructor & co---------------------------------------
   StatemachineBlink();
@@ -43,8 +49,15 @@ class StatemachineBlink {
    int stateStart, int statesOn, int statesOff, int blinkNum);
  protected:
   void setup();                        // setup properties
+  bool setLed(bool turnledon);         // turn led on or off
  public:
+  //-----set/get values-----------------------------------------
+  void setStateStart(int stateStart);  //
+  void restart(int stateStart);        // same as setStateStart
+  void setParams(int stateStart, int statesOn, int statesOff, int blinkNum);
   //-----working methods----------------------------------------
   int  doBlink(Statemachine stm);      // control LED
+  void off(Statemachine stm);          // turn LED off
+  bool goOn(Statemachine stm);         // allow blinking
 };
 #endif
