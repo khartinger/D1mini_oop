@@ -19,7 +19,7 @@ MqttClientKH2 client("..ssid..", "..password..","mqtt server name");
 ## Hardware 
 1. WeMos D1 mini
 
-##Software
+## Software
 The class MqttClientKH2 extends the class PubSubClient for an easy use of mqtt. You can use all commands from class PubSubClient as well.
 When library PubSubClient is installed in arduino ide, delete files `PubSubClient.*` in directory `/src/mqtt`.
 

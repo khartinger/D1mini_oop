@@ -17,7 +17,7 @@ MqttClientKH2 client("..ssid..", "..password..","mqtt server name");
 ## Hardware 
 1. WeMos D1 mini
 
-##Software
+## Software
 Die Klasse MqttClientKH2 erweitert die Klasse PubSubClient f&uuml;r eine einfache Verwendung von MQTT. Es k&ouml;nnen alle Befehle der Klasse PubSubClient verwendet werden.
 Wenn die Bibliothek PubSubClient in der Arduino-IDE installiert ist, k&ouml;nnen die Dateien `PubSubClient.*` im Verzeichnis `/src/mqtt` gel&ouml;scht werden.
 
@@ -27,7 +27,7 @@ ZB Installation von mosquitto auf einem Raspberry Pi und starten des Programms
 `sudo apt-get install mosquitto`   
 `sudo apt-get install mosquitto-clients`   
 `sudo /etc/init.d/mosquitto start`   
-  `MqttClientKH2 client("..ssid..", "..password..","mqtt server name");`  
+
 2. Erstellen eines Klienten auf den D1mini
 * Klasse MqttClientKH2 einbinden   
   `#include "src/mqtt/D1_class_MqttClientKH2.h"`  
