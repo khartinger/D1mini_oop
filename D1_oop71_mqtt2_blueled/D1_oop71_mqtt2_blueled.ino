@@ -66,7 +66,7 @@ int     iPub=NR_71_NOTHING;            // 0=nothing
 //_____state machine____________________________________________
 #define STATE_MAX              600     // 600*100ms = 1min
 #define STATE_DELAY            100     // state delay in ms
-#define STATE_MQTTSEND           5     // 0.5sec answer time
+#define STATE_MQTTSEND           2     // 0.2sec answer time
 Statemachine stm(STATE_MAX, STATE_DELAY);
 StatemachineBlink led1(pinBlueLED, true, 1, 1, 1,-1);
 
@@ -179,6 +179,10 @@ bool doGet()
      for(int i=0; i<GETMAX71; i++) p1+=sGet[i]+"|"; // ..sGet[]
      p1+="\r\nset: ";                               // list all..
      for(int i=0; i<SETMAX71; i++) p1+=sSet[i]+"|"; // ..sSet[]
+     p1+="\r\nsub: ";                               // list all..
+     for(int i=0; i<SUBMAX71; i++) p1+=sSub[i]+"|"; // ..sSub[]
+     p1+="\r\npub: ";                               // list all..
+     for(int i=0; i<PUBMAX71; i++) p1+=sPub[i]+"|"; // ..sPub[]
      sRetPayload[i]=p1;                // set payload
      iRet|=(1<<i); break;              // trigger mqtt answer
     case 1: //-----version--------------------------------------
@@ -263,23 +267,12 @@ void loop() {
  //======SECTION 1: action at the beginning of loop=============
  int state=stm.loopBegin();            // state begin 
  String sSerial="";
- //-----do every state------------------------------------------
  if(DEBUG71) { sSerial=String(state); sSerial+=+": "; }
- //-----do every state: check WiFi and MQTT---------------------
- if(!client.isWiFiConnected())
+ //======SECTION 2: check for WiFi and MQTT connection==========
+ if(client.isWiFiConnected())
  {
-  //=====SECTION 2: action for WiFi=NO, MQTT=NO=================
-  if(!quickBlinking) {                 // no Wifi - no blinking
-   led1.setParams(state, 1, 1,-1);     // start led..
-   quickBlinking=true;                 // ..blink quickly
-  }
- }
- else
- {
-  //=====SECTION 3: action for WiFi=YES, MQTT=DONT_CARE=========
   if(client.isConnected()) //MUST always be called (for receive!)
-  {
-   //====SECTION 4: action for WiFi=YES, MQTT=YES===============
+  {//====SECTION 3: action for WiFi=YES, MQTT=YES===============
    //.....if it is time: send MQTT answer.......................
    if((state%STATE_MQTTSEND)==0) {
     if(DEBUG71){if(iRet>0){sSerial+=" iRet=0x"+String(iRet,16);}}
@@ -291,12 +284,21 @@ void loop() {
                else led1.setParams(stm.getState(),19,1,-1);
     quickBlinking=false;
    }
-  }
+  }//====END OF SECTION 3=======================================
   else
-  {//====SECTION 5: action for WiFi=YES, MQTT=NO================
+  {//====SECTION 4: action for WiFi=YES, MQTT=NO================
    client.state();                     // call for details
+  }//====END OF SECTION 4=======================================
+ }//=====END OF SECTION 2: End of if=true=======================
+ else
+ {//=====SECTION 5: action for WiFi=NO (-> MQTT=NO)=============
+  if(!quickBlinking)                   // no Wifi & no blinking
+  {
+   led1.setParams(state, 1, 1,-1);     // start led..
+   quickBlinking=true;                 // ..blink quickly
   }
- }
+  //=====END OF SECTION 5=======================================
+ }//=====END OF SECTION 2: End of else==========================
  //======SECTION 6: action for WiFi=DONT_CARE, MQTT=DONT_CARE===
  //-----do every state: get action to be done?------------------
  if(DEBUG71) {if(iGet>0){sSerial+=" sGet=0x"+String(iGet,16);}}
@@ -304,7 +306,7 @@ void loop() {
  //-----do every state: set action to be done?------------------
  if(DEBUG71) {if(iSet>0){sSerial+=" sSet=0x"+String(iSet,16);}}
  if(iSet>0) doSet(); 
- //=====SECTION 6: prepare for next state and wait==============
+ //======SECTION 7: prepare for next state and wait=============
  led1.doBlink(stm);                    // blue led action
  stm.loopEnd();                        // state end
  //.....show only non empty states..............................
