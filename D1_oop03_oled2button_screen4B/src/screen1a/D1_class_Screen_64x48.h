@@ -1,4 +1,4 @@
-//_____D1_class_Screen_64x48.h________________171229-180515_____
+//_____D1_class_Screen_64x48.h________________171229-181215_____
 // The class Screen_64x48 contains basic OLED functions only for
 // WeMos D1 mini OLED shield 0,66" 64*48 pixel.
 // Special: char(158) = Euro instead of Pt (Pesetas) (158=9E)
@@ -9,11 +9,13 @@
 // this class have a leading underline
 // Use this class, if you have problems with the Adafruit
 // classes especially after an update of the libraries.
-//
+// Created by Karl Hartinger, December 15, 2018
+// Last modified: -
+// Released into the public domain.
 #ifndef D1_CLASS_SCREEN_64x48_H
 #define D1_CLASS_SCREEN_64x48_H
 #include "Arduino.h"                   // boolean, ...
-#include <pgmspace.h>                  // program memory
+//#include <pgmspace.h>                  // program memory
 #include <Wire.h>                      // i2c
 
 //**************************************************************
