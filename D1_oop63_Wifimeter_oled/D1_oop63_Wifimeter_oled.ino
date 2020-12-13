@@ -1,22 +1,28 @@
-//_____D1_oop63_Wifimeter_oled.ino____________190119-190119_____
-// Display WiFi strength on an OLED screen221.
-// Hardware: (1) WeMos D1 mini
+//_____D1_oop63_Wifimeter_oled.ino____________190119-201212_____
+// Display WiFi strength on a 0.66" OLED screen221.
+// Hardware: (1) WeMos D1 mini or ESP32D1mini
 //           (2) 0.66"-OLED-Shield
 // Created by Karl Hartinger, January 19, 2019.
-// Last modified: -
+// Updates:
+// 2020-12-12 Adaptation for ESP32D1mini
 // Released into the public domain.
+#define D1MINI          1              // ESP8266 D1mini +pro
+//#define ESP32D1         2              // ESP32 D1mini
 #define  DEBUG63    true              //
 #define  VERSION63  "2019-01-19 D1_oop63_Wifimeter_oled"
 #define  FUNCTION63 "Display WiFi strength on oled."
-#define  OLED_RESET            RST     // D3=GPIO0, D0=GPIO16
 
-#include <ESP8266WiFi.h>
-#include <WiFiClient.h>
+#if defined(ESP32) || defined(ESP32D1)
+ #include <WiFi.h>                     // network connection
+#else
+ #include <ESP8266WiFi.h>
+ #include <WiFiClient.h>
+#endif
 #include "src/screen1a/D1_class_screen1a.h"
 
 const char* ssid = "Raspi11";          // (17 chars)
 const char* password = "12345678";     // min. 8 chars or ""
-char* host = "10.1.1.1";               // or "http://..."
+char* host = (char*)"10.1.1.1";        // or "http://..."
 IPAddress ip(10,1,1,99);               //
 IPAddress gateway(10,1,1,1);           //
 IPAddress subnet(255,255,255,0);       //
@@ -51,9 +57,10 @@ bool wifiConnected()
 void setup(void){
  if(DEBUG63) Serial.begin(115200);
  if(DEBUG63) Serial.println("\n-----Setup wifi connection-----");
+ display_.begin();                     // 
  //-----Setup wifi connection-----------------------------------
  WiFi.mode(WIFI_STA);
- WiFi.config(ip, gateway, subnet);  // skipp for dhcp
+ WiFi.config(ip, gateway, subnet);     // skipp for dhcp
  WiFi.begin(ssid, password);
 }
 
