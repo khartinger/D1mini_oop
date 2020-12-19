@@ -1,4 +1,4 @@
-//_____D1_class_SimpleMqtt.h__________________200705-201208_____
+//_____D1_class_SimpleMqtt.h__________________200705-201219_____
 // The SimpleMqtt class is suitable for D1 mini (ESP8266) and 
 // and ESP32 D1mini and extends the PubSubClient class to make
 // MQTT easy to use.
@@ -42,7 +42,9 @@
 //       src/simplemqtt should be deleted.
 // Created by Karl Hartinger, December 08, 2020.
 // Changes:
-// 2020-12-08 first release
+// 2020-12-16 add setLanguage (language_, SIMPLEMQTT_LANGUAGE)
+// 2020-12-19 connectMQTT(): add line 2 if(!isWiFiConnected...
+//            EEPROM: add eeprom...myData()
 // Hardware: D1 mini OR ESP32 D1mini
 // Released into the public domain.
 
@@ -67,7 +69,8 @@ void   simpleSub(String sTopic, String sPayload);
 #if !defined(DEBUG_MQTT)
  #define DEBUG_MQTT          true      // true=Serial output
 #endif
-#define SIMPLEMQTT_VERSION   "SimpleMqtt Version 2020-12-08"
+#define SIMPLEMQTT_LANGUAGE  'e'       // e=english, d=deutsch
+#define SIMPLEMQTT_VERSION   "SimpleMqtt_Version_2020-12-17"
 #define SIMPLEMQTT_BASE      "simplemqtt/default"
 #define STARTINFO_TOPIC      "info/start"
 #define STARTINFO_ALLOW      true      // send start info
@@ -85,8 +88,9 @@ void   simpleSub(String sTopic, String sPayload);
 #define  WIFI_CONNECTING_COUNTER     1 // connecting after begin
 #define  PAYLOAD_MAXLEN            200 //
 #define  USE_EEPROM               true // 
-#define  EEPROM_SIZE                64 // 
+#define  EEPROM_SIZE               256 // 
 #define  EEPROM_SIZE_MAX          4096 //
+#define  EEPROM_DATA_MAX            99 //
 #define  TOPIC_MAXLEN               48 // must be EEPROMSIZE-12
 
 //-----Bits for connection state--------------------------------
@@ -108,7 +112,7 @@ class SimpleMqtt : public PubSubClient {
   String pass_;                        // WiFi password
   String mqtt_;                        // MQTT server (name or ip)
   int    port_;                        // mqtt port (def 1883)
-
+  char   language_;                    // e=english, d=deutsch
   WiFiClient d1miniClient;             // WiFi client for MQTT
   String sMQTTClientName;              // MQTT client name
   String sMyIP;                        // client IP address
@@ -158,6 +162,8 @@ class SimpleMqtt : public PubSubClient {
  
  //------setter and getter methods------------------------------
  public:
+  //_____set language (default e=english; d=german)_____________
+  void   setLanguage(char language);
   //_____set (used) EEPROM size_________________________________
   void   setEepromSize(int eepromSize);
   //_____Maximum milliseconds to wait for WiFi to be connected__
@@ -282,20 +288,30 @@ class SimpleMqtt : public PubSubClient {
   int    splitString(String str, String aStr[], String delimiter);
   //_____split string to array 3_________________________________
   int    splitString(String str, String aStr[], String delimiter, int imax);
- 
+
  //------internal methods---------------------------------------
   //_____generate get answers in array aPayloadRet[]____________
   void   createGetAnswer();
-  
+
  //------methods for eeprom read/write--------------------------
+  //_____eeprom return value as string__________________________
+  String getsEepromStatus(int iResult);
   //_____write topic to eeprom as topicBase_____________________
   int    eepromWriteTopicBase(String topic);
-  //_____read topic from eeprom or use default value____________
+  //_____read topic base from eeprom____________________________
   String eepromReadTopicBase(int& iResult);
-  //_____read topic from eeprom or use default value____________
+  //_____read topic base from eeprom, ignore result_____________
   String eepromReadTopicBase();
   //_____erase identifier of topicBase__________________________
   bool   eepromEraseTopicBase();
+  //_____write string data to eeprom (after topicBase)__________
+  int    eepromWriteMyData(String sData);
+  //_____read string data from eeprom___________________________
+  String eepromReadMyData(int& iResult);
+  //_____read string data from eeprom, ignore result____________
+  String eepromReadMyData();
+  //_____erase string data from eeprom__________________________
+  bool   eepromEraseMyData();
   //_____read a block from eeprom_______________________________
   size_t eepromReadBlock(char* data, unsigned long address,
          unsigned long len);

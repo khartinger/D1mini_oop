@@ -1,4 +1,4 @@
-//_____D1_oop77_smqtt_stm_relay1.ino__________200714-201108_____
+//_____D1_oop77_smqtt_stm_relay1.ino__________200714-201219_____
 // This program for a D1 mini (or ESP32 D1mini) is used to
 // switch a relay or (AC) light bulb on and off via MQTT.
 // Further functions are:
@@ -42,40 +42,41 @@
 // Created by Karl Hartinger, December 08, 2020.
 // Changes:
 // 2020-11-08 New
+// 2020-12-19 update SimpleMqtt (myData...)
 // Released into the public domain.
 
-//#define ESP32D1         2              // ESP32 D1mini
 #define D1MINI          1              // ESP8266 D1mini +pro
+//#define ESP32D1         2              // ESP32 D1mini
 #include "src/simplemqtt/D1_class_SimpleMqtt.h"
 #include "src/relay2AC/D1_class_Relay2AC.h"
 #include "src/statemachine/D1_class_Statemachine.h"
 #include "src/statemachine/D1_class_StatemachineBlink.h"
 
 #define  DEBUG77        true //false
-#define  VERSION77      "2020-12-08 D1_oop77_smqtt_stm_relay1"
-#define  FUNCTION77     "Switch a relay by \"relay/1/set/licht ein|aus|um\""
+#define  VERSION77      "2020-12-19 D1_oop77_smqtt_stm_relay1"
+#define  FUNCTION77     "Switch a relay by \"relay/1/set/relay on|off|toggle\""
 #define  TOPIC_BASE     "relay/1"
-#define  TOPIC_GET      "help,version,ip,topicbase,eeprom,all,lamp,relay,current,current0,debug"
-#define  TOPIC_SET      "topicbase,eeprom,relay,current0,debug"
+#define  TOPIC_GET      "?,help,version,ip,topicbase,eeprom,all,lamp,relay,current,current0,debug"
+#define  TOPIC_SET      "topicbase,eeprom0,relay,current0"
 #define  TOPIC_SUB      ""
 #define  TOPIC_PUB      ""
 
 //_______sensors, actors, global variables______________________
 #if defined(ESP32) || defined(ESP32D1)
- #define  PIN_LED1       5             // D5 or D8...
+ //#define  PIN_LED1      18             // D5=18 or D8=5
  #define  PIN_LED_G     19
  #define  PIN_LED_R     23
+ #define  PIN_LED1       5             // D5 or D8...
  #define  PIN_RELAY     22
  Relay2AC relay1(PIN_RELAY,2,2.0,0.05); // relais Ioff=50mA
 #else
- #define  PIN_LED1      D8             // D5 or D8...
+ //#define  PIN_LED1      D5             // D5=18 or D8=5
  #define  PIN_LED_G     D6
  #define  PIN_LED_R     D7
+ #define  PIN_LED1      D8             // D5 or D8...
  #define  PIN_RELAY     D1
  Relay2AC relay1(PIN_RELAY,2.0,0.05);  // relais Ioff=50mA 
 #endif
-bool     bSendDebugPeriodic=false;     //send debug info by MQTT
-
 
 //_______MQTT communication_____________________________________
 //SimpleMqtt client("..ssid..", "..password..","mqttservername");
@@ -108,11 +109,21 @@ String simpleGet(String sPayload)
  if(sPayload=="topicbase") return client.getsTopicBase();
  //-------------------------------------------------------------
   if(sPayload=="eeprom") {
-  int iResult;
-  String s1=client.eepromReadTopicBase(iResult);
-  if(iResult==-2) return String("Error: No topic base stored");
-  if(iResult<0) return String("Error # ")+String(iResult);
-  return s1;
+  int iResult1, iResult2;
+  String s1=client.eepromReadTopicBase(iResult1);
+  String s2=client.eepromReadMyData(iResult2);
+  p1="{\"topic\":\"";
+  if(iResult1>=0) p1+=s1;
+  else
+  {
+   if(iResult1==-2) p1+="(no topic base)";
+   else p1+=String("Error_#")+String(iResult1);
+  }
+  p1+="\",\"data\":\"";
+  if(s2=="") p1+="(no data)";
+  else p1+=s2;
+  p1+="\"}";
+  return p1;
  }
  //-------------------------------------------------------------
  if(sPayload=="all") {
@@ -122,9 +133,7 @@ String simpleGet(String sPayload)
   p1+="\"Relais\":"+String(relay1.getRelayStatus())+",";
   p1+="\"Current\":"+String(relay1.getCurrent(),3)+",";
   p1+="\"Current0\":"+String(relay1.getCurrentOn(),3)+",";
-  p1+="\"NominalCurrent\":"+String(relay1.getNominalCurrent(),3)+",";
-  p1+="\"Debug\":";
-  if(bSendDebugPeriodic) p1+="\"on\""; else p1+="\"off\"";
+  p1+="\"NominalCurrent\":"+String(relay1.getNominalCurrent(),3);
   p1+="}";
   return p1;
  }
@@ -137,19 +146,6 @@ String simpleGet(String sPayload)
  //-------------------------------------------------------------
  if(sPayload=="current0") return String(relay1.getCurrentOn(),3);
  //-------------------------------------------------------------
- if(sPayload=="debug") {
-  if(bSendDebugPeriodic)
-  {
-   char ca[48];
-   uint16_t mil=stm.getBeginMillis();
-   //uint16_t block=ESP.getMaxFreeBlockSize();
-   //uint8_t  frag=ESP.getHeapFragmentation();
-   //sprintf(ca, "millis=%d maxBlock=%d frag=%d %%\0",mil,block,frag);
-   sprintf(ca, "millis=%d",mil);
-   return String(ca);
-  }
- }
- //-------------------------------------------------------------
  return String("");                         // wrong Get command
 }
 
@@ -158,52 +154,61 @@ String simpleGet(String sPayload)
 // return: ret answer payload for set command
 String simpleSet(String sTopic, String sPayload)
 {
- String p1;                            // help string
- float  iOn;                           // help value current
+ String p1=String("");                      // help string
+ float  iOn;                                // help value current
  //-------------------------------------------------------------
  if(sTopic=="topicbase") {                  // new topic base?
   client.changeTopicBase(sPayload);         // change base
   return client.getsTopicBase();            // return new base
  }
  //-------------------------------------------------------------
- if(sTopic=="eeprom") {                     // erase eeprom?
-  if(sPayload=="0" || sPayload=="erase")    // payload OK?
+ if(sTopic=="eeprom0") {                    // erase eeprom?
+  if(sPayload=="?") return "erase...1=topicBase|2=myData|3=all";
+  if(sPayload=="2" || sPayload=="3" || sPayload=="all")
   {
-   if(client.eepromEraseTopicBase()) return "erased";
-   else return "not erased";                // return answer
+   if(client.eepromEraseMyData()) p1="my data erased";
+   else p1="my data NOT erased";            // return answer
   }
+  if(sPayload=="1" || sPayload=="3" || sPayload=="all")
+  {
+   if(p1!="") p1=", "+p1;
+   if(client.eepromEraseTopicBase()) p1="topicbase erased"+p1;
+   else p1="topicbase NOT erased"+p1;       // return answer
+  }
+  return p1;
  }
  //-------------------------------------------------------------
  if(sTopic=="relay") {                      // set relay
-  if(sPayload=="on" || sPayload=="1"){
-   relay1.on(); p1=String("Relay on");
+    if(sPayload=="?") p1="1=on|0=off|-1=toggle";
+  if(sPayload=="1" || sPayload=="on"){
+   relay1.on(); p1=String("Relay_on");
   }
-  if(sPayload=="off" || sPayload=="0"){
-   relay1.off(); p1=String("Relay off");
+  if(sPayload=="0" || sPayload=="off"){
+   relay1.off(); p1=String("Relay_off");
   }
   if(sPayload=="-1" || sPayload=="toggle"){
-   relay1.toggle(); p1=String("Relay toggle");
+   relay1.toggle(); p1=String("Relay_toggle");
   }
+  p1=p1+"._Now_"+String(relay1.getRelayStatus());
   if(DEBUG77) Serial.println(p1);
   return p1;
  }
  //-------------------------------------------------------------
  if(sTopic=="current0") {                  // set current limit
-  
-  iOn=atof(sPayload.c_str());
+    //iOn=atof(sPayload.c_str());
+  iOn=sPayload.toFloat();
   if((iOn>0)&&(iOn<=relay1.getNominalCurrent()))
-  relay1.setCurrentOn(iOn);
-  p1=String("new limit ");
-  return p1+sPayload;
- }
- //-------------------------------------------------------------
- // debug: turn sending debug info on or off
- if(sTopic=="debug") {                      // set debug mode
-  if(sPayload=="on" || sPayload=="1"){
-   bSendDebugPeriodic=true; p1=String("on");
+  {
+   String s1=String("C0=");
+   client.eepromWriteMyData(s1+sPayload);
+   relay1.setCurrentOn(iOn);
+   p1=String("new_limit_");
+   return p1+sPayload+"A";
   }
-  else { bSendDebugPeriodic=false; p1=String("off"); }
-  return p1;
+  else
+  {
+   return String("limit not set");
+  }
  }
  //-------------------------------------------------------------
  return String("");                         // wrong set command
@@ -225,7 +230,25 @@ void setup() {
  led1.doBlink(stm);                         //1.state: led D8 on
  pinMode(PIN_LED_G, OUTPUT);                // pin is output
  pinMode(PIN_LED_R, OUTPUT);                // pin is output
- //------set nominal current, test relay------------------------
+  //------(try to) read current0 from eeprom---------------------
+ int iResult;
+ String sMyData=client.eepromReadMyData(iResult);
+ if(iResult>0)
+ {
+  int len1=sMyData.length();
+  if(len1>3)
+  {
+   if(sMyData.substring(0,3)=="C0=")
+   {
+    String s1=sMyData.substring(3);
+    //float aOn=atof(s1.c_str());
+    float aOn=s1.toFloat();
+    if(DEBUG77) Serial.println("CurrentOn from EEPROM: "+s1);
+    relay1.setCurrentOn(aOn);
+   }
+  }
+ }
+  //------set nominal current, test relay------------------------
  relay1.setNominalCurrent(2.00);            // adjust to 2.00 A
  if(relay1.isOK())                          // relay off-on-off
  {//.....current measuring ok...................................
