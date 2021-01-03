@@ -1,4 +1,4 @@
-//_____D1_class_SimpleMqtt.h__________________200705-201208_____
+//_____D1_class_SimpleMqtt.h__________________200705-201219_____
 // The SimpleMqtt class is suitable for D1 mini (ESP8266) and 
 // and ESP32 D1mini and extends the PubSubClient class to make
 // MQTT easy to use.
@@ -42,14 +42,17 @@
 //       src/simplemqtt should be deleted.
 // Created by Karl Hartinger, December 08, 2020.
 // Changes:
-// 2020-12-08 first release
+// 2020-12-16 add setLanguage (language_, SIMPLEMQTT_LANGUAGE)
+// 2020-12-19 connectMQTT(): add line 2 if(!isWiFiConnected...
+//            EEPROM: add eeprom...myData()
+// 2021-01-03 add retained functionality
 // Hardware: D1 mini OR ESP32 D1mini
 // Released into the public domain.
 
 #ifndef D1_CLASS_SIMPLEMQTT_H
 #define D1_CLASS_SIMPLEMQTT_H
 #include "Arduino.h"                   // D1, ...
-#ifdef ESP8266
+#if defined(ESP8266) || defined(D1MINI)
  #include <ESP8266WiFi.h>              // network connection
 #endif
 #if defined(ESP32) || defined(ESP32D1)
@@ -67,7 +70,8 @@ void   simpleSub(String sTopic, String sPayload);
 #if !defined(DEBUG_MQTT)
  #define DEBUG_MQTT          true      // true=Serial output
 #endif
-#define SIMPLEMQTT_VERSION   "SimpleMqtt Version 2020-12-08"
+#define SIMPLEMQTT_LANGUAGE  'e'       // e=english, d=deutsch
+#define SIMPLEMQTT_VERSION   "SimpleMqtt_Version_2020-12-17"
 #define SIMPLEMQTT_BASE      "simplemqtt/default"
 #define STARTINFO_TOPIC      "info/start"
 #define STARTINFO_ALLOW      true      // send start info
@@ -85,8 +89,9 @@ void   simpleSub(String sTopic, String sPayload);
 #define  WIFI_CONNECTING_COUNTER     1 // connecting after begin
 #define  PAYLOAD_MAXLEN            200 //
 #define  USE_EEPROM               true // 
-#define  EEPROM_SIZE                64 // 
+#define  EEPROM_SIZE               256 // 
 #define  EEPROM_SIZE_MAX          4096 //
+#define  EEPROM_DATA_MAX            99 //
 #define  TOPIC_MAXLEN               48 // must be EEPROMSIZE-12
 
 //-----Bits for connection state--------------------------------
@@ -108,7 +113,7 @@ class SimpleMqtt : public PubSubClient {
   String pass_;                        // WiFi password
   String mqtt_;                        // MQTT server (name or ip)
   int    port_;                        // mqtt port (def 1883)
-
+  char   language_;                    // e=english, d=deutsch
   WiFiClient d1miniClient;             // WiFi client for MQTT
   String sMQTTClientName;              // MQTT client name
   String sMyIP;                        // client IP address
@@ -138,6 +143,9 @@ class SimpleMqtt : public PubSubClient {
   String aPayloadRet[TOPIC_MAX];       // payload for ret topics
   String aPayloadSub[TOPIC_MAX];       // payload for sub topics
   String aPayloadPub[TOPIC_MAX];       // payload for pub topics
+  boolean aRetainedGet[TOPIC_MAX];     // get topics
+  boolean aRetainedSet[TOPIC_MAX];     // set topics
+  boolean aRetainedPub[TOPIC_MAX];     // pub topics
 
  //------constructor & co---------------------------------------
  public:
@@ -158,6 +166,8 @@ class SimpleMqtt : public PubSubClient {
  
  //------setter and getter methods------------------------------
  public:
+  //_____set language (default e=english; d=german)_____________
+  void   setLanguage(char language);
   //_____set (used) EEPROM size_________________________________
   void   setEepromSize(int eepromSize);
   //_____Maximum milliseconds to wait for WiFi to be connected__
@@ -194,6 +204,20 @@ class SimpleMqtt : public PubSubClient {
   int    setTopicSub(String sAllSub);
   //_____set all pub(lish)-topics as comma separated strings____
   int    setTopicPub(String sAllPub);
+  
+  //_____set all get-topics as comma separated strings__________
+  //     plus comma separated retained string (0=false, 1=true)
+  int    setTopicGet(String sAllGet, String sAllRetainedGet);
+  //_____set all set-topics as comma separated strings__________
+  //     plus comma separated retained string (0=false, 1=true)
+  int    setTopicSet(String sAllSet, String sAllRetainedSet);
+  //_____set all pub(lish)-topics as comma separated strings____
+  //     plus comma separated retained string (0=false, 1=true)
+  int    setTopicPub(String sAllPub, String sAllRetainedPub);
+  //_____set retained for index in a..Get|a..Set|a..Pub_________
+  boolean setRetainedIndex(String sType, int index, boolean bRetained);
+  //_____ret all retained flags as string_______________________
+  String getsRetainedAll();
 
  //------methods for Wifi (WLAN)--------------------------------
   //_____try to connect to WiFi, wait max. wifiWaitMsMax________
@@ -248,8 +272,11 @@ class SimpleMqtt : public PubSubClient {
   bool   changeTopicBase(String oldBase, String newBase);
   //_____prepare to send a message with topic out of aPayloadPub
   void   sendPubIndex(int index, String payload);
+  void   sendPubIndex(int index, String payload, boolean retain);
   //_____force (simulate) a get-, set-, sub- or pub-message_____
   bool   simpleMqttDo(String type, String topic, String payload);
+  //_____same as simpleMqttDo(): force (simulate) a XXX-message___
+  bool   forceXXXAnswer(String type, String topic, String payload);
 
  //------connection state---------------------------------------
   //_____is error bit set?______________________________________
@@ -280,22 +307,38 @@ class SimpleMqtt : public PubSubClient {
   int    splitString(String str, String aStr[]);
   //_____split string to array 2________________________________
   int    splitString(String str, String aStr[], String delimiter);
-  //_____split string to array 3_________________________________
+  //_____split string to array 3________________________________
   int    splitString(String str, String aStr[], String delimiter, int imax);
- 
+  //_____split string to boolean array 1 (0=false, 1=true)______
+  int    splitString2Bool(String str, boolean bStr[]);
+  //_____split string to boolean array 2 (0=false, 1=true)______
+  int    splitString2Bool(String str, boolean bStr[], String delimiter);
+  //_____split string to boolean array 3 (0=false, 1=true)______
+  int    splitString2Bool(String str, boolean bStr[], String delimiter, int imax);
+
  //------internal methods---------------------------------------
   //_____generate get answers in array aPayloadRet[]____________
   void   createGetAnswer();
-  
+
  //------methods for eeprom read/write--------------------------
+  //_____eeprom return value as string__________________________
+  String getsEepromStatus(int iResult);
   //_____write topic to eeprom as topicBase_____________________
   int    eepromWriteTopicBase(String topic);
-  //_____read topic from eeprom or use default value____________
+  //_____read topic base from eeprom____________________________
   String eepromReadTopicBase(int& iResult);
-  //_____read topic from eeprom or use default value____________
+  //_____read topic base from eeprom, ignore result_____________
   String eepromReadTopicBase();
   //_____erase identifier of topicBase__________________________
   bool   eepromEraseTopicBase();
+  //_____write string data to eeprom (after topicBase)__________
+  int    eepromWriteMyData(String sData);
+  //_____read string data from eeprom___________________________
+  String eepromReadMyData(int& iResult);
+  //_____read string data from eeprom, ignore result____________
+  String eepromReadMyData();
+  //_____erase string data from eeprom__________________________
+  bool   eepromEraseMyData();
   //_____read a block from eeprom_______________________________
   size_t eepromReadBlock(char* data, unsigned long address,
          unsigned long len);

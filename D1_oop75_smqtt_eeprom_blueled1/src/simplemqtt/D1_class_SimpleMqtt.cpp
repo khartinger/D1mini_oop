@@ -1,4 +1,4 @@
-//_____D1_class_SimpleMqtt.cpp________________200705-201108_____
+//_____D1_class_SimpleMqtt.cpp________________200705-201219_____
 // The SimpleMqtt class is suitable for D1 mini (ESP8266) and 
 // and ESP32 D1mini and extends the PubSubClient class to make
 // MQTT easy to use.
@@ -42,17 +42,20 @@
 //       src/simplemqtt should be deleted.
 // Created by Karl Hartinger, December 08, 2020.
 // Changes:
-// 2020-12-08 first release
+// 2020-12-16 add setLanguage (language_, SIMPLEMQTT_LANGUAGE)
+// 2020-12-19 connectMQTT(): add line 2 if(!isWiFiConnected...
+//            EEPROM: add eeprom...myData()
+// 2021-01-03 add retained functionality
 // Hardware: D1 mini OR ESP32 D1mini
 // Released into the public domain.
 
 #include "D1_class_SimpleMqtt.h"
 
-//**************************************************************
+// *************************************************************
 //    constructor & co
-//**************************************************************
+// *************************************************************
 
-//_____constructor______________________________________________
+//_______constructor____________________________________________
 SimpleMqtt::SimpleMqtt():PubSubClient(d1miniClient)
 {
  ssid_=String(MQTT_SSID);
@@ -63,7 +66,7 @@ SimpleMqtt::SimpleMqtt():PubSubClient(d1miniClient)
  setup();
 }
 
-//_____constructor 2____________________________________________
+//_______constructor 2__________________________________________
 SimpleMqtt::SimpleMqtt(char* ssid, char* pwd)
   :PubSubClient(d1miniClient)
 {
@@ -76,7 +79,7 @@ SimpleMqtt::SimpleMqtt(char* ssid, char* pwd)
 }
 
 /*
-//_____constructor 3____________________________________________
+//_______constructor 3__________________________________________
 SimpleMqtt::SimpleMqtt(char* ssid, char* pwd, 
   char* mqtt_server):PubSubClient(d1miniClient)
 {
@@ -89,7 +92,7 @@ SimpleMqtt::SimpleMqtt(char* ssid, char* pwd,
 }
 */
 
-//_____constructor 4____________________________________________
+//_______constructor 4__________________________________________
 SimpleMqtt::SimpleMqtt(char* ssid, char* pwd, 
   char* mqtt_server, char* topicbase)
   :PubSubClient(d1miniClient)
@@ -102,7 +105,7 @@ SimpleMqtt::SimpleMqtt(char* ssid, char* pwd,
  setup();
 }
 
-//_____constructor 5____________________________________________
+//_______constructor 5__________________________________________
 SimpleMqtt::SimpleMqtt(String sssid, String spwd, String smqtt_server)
 :PubSubClient(d1miniClient)
 {
@@ -114,9 +117,10 @@ SimpleMqtt::SimpleMqtt(String sssid, String spwd, String smqtt_server)
  setup();
 }
 
-//_____setup (called by constructor)____________________________
+//_______setup (called by constructor)__________________________
 void SimpleMqtt::setup()
 {
+ language_=SIMPLEMQTT_LANGUAGE;        // e=english, d=deutsch
  wifiWaitMsMax=TIMEOUT_WIFI_CONNECT_MS;
  wifiConnectingCounterMax=WIFI_CONNECTING_COUNTER;
  wifiConnectingCounter=0;              // start with connectingWiFiBegin
@@ -135,20 +139,26 @@ void SimpleMqtt::setup()
  numTopicSet=0;                        // no set topics yet
  numTopicSub=0;                        // no sub topics yet
  numTopicPub=0;                        // no pub topics yet
+ //-----set all messages to retained = false--------------------
+ for(int i=0; i<TOPIC_MAX; i++) {
+  aRetainedGet[i]=false;
+  aRetainedSet[i]=false;
+  aRetainedPub[i]=false;
+ }
  eeprom_=new EEPROMClass;              // eeprom object
  begin(0);                             // sets sTopicBase
 }
 
-//_____init objects_____________________________________________
+//_______init objects___________________________________________
 // read topic base from eeprom (or use default on error)
 // iSource=0: called by constructor, 1: called by setup()
 bool SimpleMqtt::begin(int iSource)
 {
  int ret=true;
- //-----read topic from eeprom----------------------------------
+ //------(try to) read topic from eeprom------------------------
  int iResult;
  sTopicBase=eepromReadTopicBase(iResult);
- if(iResult!=0) {
+ if(iResult<0) {
   sTopicBase=sTopicBaseDefault;        // "path" of topics
   if(DEBUG_MQTT) Serial.printf("begin(): topic base - use default %s\n",sTopicBase.c_str());
   ret=false;
@@ -157,29 +167,35 @@ bool SimpleMqtt::begin(int iSource)
  return ret;
 }
 
-//_____init objects_____________________________________________
+//_______init objects___________________________________________
 bool SimpleMqtt::begin() { return begin(1); }
  
-//**************************************************************
+// *************************************************************
 // setter and getter methods
-//**************************************************************
+// *************************************************************
 
-//_____set (used) EEPROM size___________________________________
+//_______set language (default e=english; d=german)_____________
+void SimpleMqtt::setLanguage(char language) { 
+ if(language=='d' || language=='D') { language_='d'; return; }
+ language_='e';
+}
+
+//_______set (used) EEPROM size_________________________________
 void SimpleMqtt::setEepromSize(int eepromSize) {
  if(eepromSize>8 && eepromSize<=EEPROM_SIZE_MAX)
   eepromSize_= eepromSize; 
 }
 
-//_____Maximum Milliseconds to weit for WiFi to be connected____
+//_______Maximum Milliseconds to weit for WiFi to be connected__
 void SimpleMqtt::setWiFiWaitingTime(int ms) 
 { if(ms>=100) wifiWaitMsMax=ms; }
 
-//_____number of connectingWiFi() after connectingWiFiBegin()_
+//_______number of connectingWiFi() after connectingWiFiBegin__
 void SimpleMqtt::setWiFiConnectingCounter(int number)
 { if(number>0) wifiConnectingCounterMax=number; }
 
 
-//_____get MQTT client state as string__________________________
+//_______get MQTT client state as string________________________
 String SimpleMqtt::getsState()
 {
  String s1;
@@ -212,13 +228,13 @@ String SimpleMqtt::getsState()
  return s1;
 }
 
-//_____client name of WiFi network______________________________
+//_______client name of WiFi network____________________________
 String SimpleMqtt::getsSSID() { return ssid_; }
 
-//_____client IP address as string______________________________
+//_______client IP address as string____________________________
 String SimpleMqtt::getsMyIP() { return sMyIP; }
 
-//_____get D1mini MAC address as string_________________________
+//_______get D1mini MAC address as string_______________________
 String SimpleMqtt::getsMac()
 {
  char cmac[18];                        // 12+5+1=18 bytes
@@ -231,14 +247,14 @@ String SimpleMqtt::getsMac()
  return s1;
 }
 
-//_____get "path" for mqtt messages_____________________________
+//_______get "path" for mqtt messages___________________________
 String SimpleMqtt::getsTopicBase() { return sTopicBase; }
 
-//**************************************************************
+// *************************************************************
 //    methods to declare mqtt topics
-//**************************************************************
+// *************************************************************
 
-//_____set "path" for MQTT commands (+ eeprom)__________________
+//_______set "path" for MQTT commands (+ eeprom)________________
 // changes sTopicBase in RAM and EEPROM.
 // Method does NOT subscribe new topics on MQTT broker! 
 // (If you want this, use changeTopicBase() instead)
@@ -258,10 +274,10 @@ int SimpleMqtt::setTopicBase(String topicBasis)
  {
   int len2=eepromWriteTopicBase(topicBasis);
   if(len1==len2) 
-  {//.........write to eeprom ok................................
+  {//....write to eeprom ok.....................................
    int iResult;
    String s1=eepromReadTopicBase(iResult);
-   if(iResult!=0) ret|=8;              // eeprom read error
+   if(iResult<0) ret|=8;               // eeprom read error
   }
   else ret|=4;                         // eeprom write error
  }
@@ -271,7 +287,7 @@ int SimpleMqtt::setTopicBase(String topicBasis)
  return ret;
 }
 
-//_____set default "path" for MQTT commands (+ eeprom)__________
+//_______set default "path" for MQTT commands (+ eeprom)________
 // return: 0=OK, 1=don't use EEPROM, 2=topic too long, 4=eeprom
 //         write error, 8,16=eeprom read error
 int SimpleMqtt::setTopicBaseDefault(String topicBasisDefault)
@@ -292,7 +308,7 @@ int SimpleMqtt::setTopicBaseDefault(String topicBasisDefault)
  return ret;
 }
 
-//_____set all (comma separated) topics_________________________
+//_______set all (comma separated) topics_______________________
 void SimpleMqtt::setTopics(String sAllGet, String sAllSet, 
                            String sAllSub, String sAllPub)
 {
@@ -302,39 +318,118 @@ void SimpleMqtt::setTopics(String sAllGet, String sAllSet,
  setTopicPub(sAllPub);
 }
 
-//_____set all get-topics as comma separated strings____________
+//_______set all get-topics as comma separated strings__________
 int SimpleMqtt::setTopicGet(String sAllGet)
 {
  numTopicGet=splitString(sAllGet, aTopicGet);
  return numTopicGet;
 }
 
-//_____set all set-topics as comma separated strings____________
+//_______set all set-topics as comma separated strings__________
 int SimpleMqtt::setTopicSet(String sAllSet)
 {
  numTopicSet=splitString(sAllSet, aTopicSet);
  return numTopicSet;
 }
 
-//_____set all sub(scribe)-topics as comma separated strings____
+//_______set all sub(scribe)-topics as comma separated strings__
 int SimpleMqtt::setTopicSub(String sAllSub)
 {
  numTopicSub=splitString(sAllSub, aTopicSub);
  return numTopicSub;
 }
  
-//_____set all pub(lish)-topics as comma separated strings______
+//_______set all pub(lish)-topics as comma separated strings____
 int SimpleMqtt::setTopicPub(String sAllPub)
 {
  numTopicPub=splitString(sAllPub, aTopicPub);
  return numTopicPub;
 }
 
-//**************************************************************
-// methods for Wifi (WLAN)
-//**************************************************************
+//_______set all get-topics as comma separated strings__________
+//       plus comma separated retained string (0=false, 1=true)
+int SimpleMqtt::setTopicGet(String sAllGet, String sAllRetainedGet)
+{
+ splitString2Bool(sAllRetainedGet, aRetainedGet);
+ numTopicGet=splitString(sAllGet, aTopicGet);
+ return numTopicGet;
+}
 
-//_____try to connect to WiFi, wait max. wifiWaitMsMax__________
+//_______set all set-topics as comma separated strings__________
+//       plus comma separated retained string (0=false, 1=true)
+int SimpleMqtt::setTopicSet(String sAllSet, String sAllRetainedSet)
+{
+ splitString2Bool(sAllRetainedSet, aRetainedSet);
+ numTopicSet=splitString(sAllSet, aTopicSet);
+ return numTopicSet;
+}
+
+//_______set all pub(lish)-topics as comma separated strings____
+//       plus comma separated retained string (0=false, 1=true)
+int SimpleMqtt::setTopicPub(String sAllPub, String sAllRetainedPub)
+{
+ splitString2Bool(sAllRetainedPub, aRetainedPub);
+ numTopicPub=splitString(sAllPub, aTopicPub);
+ return numTopicPub;
+}
+
+//_______set retained for index in a..Get|a..Set|a..Pub_________
+boolean SimpleMqtt::setRetainedIndex(String sType, int index, boolean bRetained)
+{
+ if(sType=="get") {
+  if(index>=0 && index<numTopicGet) {
+   aRetainedGet[index]=bRetained;
+   return true;
+  }
+ }
+ if(sType=="set") {
+  if(index>=0 && index<numTopicSet) {
+   aRetainedSet[index]=bRetained;
+   return true;
+  }
+ }
+ if(sType=="pub") {
+  if(index>=0 && index<numTopicPub) {
+   aRetainedPub[index]=bRetained;
+   return true;
+  }
+ }
+ return false;
+}
+
+//_____ret all retained flags as string_______________________
+String SimpleMqtt::getsRetainedAll()
+{
+ String s1="get: ";
+ int i;
+ for(i=0; i<numTopicGet; i++)
+ {
+  if(i>0) s1+=",";
+  s1+=String(aRetainedGet[i]);
+ }
+ s1+="\nset: ";
+ for(i=0; i<numTopicSet; i++)
+ {
+  if(i>0) s1+=",";
+  s1+=String(aRetainedSet[i]);
+ }
+ s1+="\npub: ";
+ for(i=0; i<numTopicPub; i++)
+ {
+  if(i>0) s1+=",";
+  s1+=String(aRetainedPub[i]);
+ }
+ s1+="\n";
+ return s1;
+}
+
+
+
+// *************************************************************
+// methods for Wifi (WLAN)
+// *************************************************************
+
+//_______try to connect to WiFi, wait max. wifiWaitMsMax________
 // return: true=connected (OK)
 bool SimpleMqtt::connectWiFi() {
  wifiConnectingCounter--;              //connectings after begin
@@ -346,7 +441,7 @@ bool SimpleMqtt::connectWiFi() {
  return connectingWiFi();
 }
 
-//_____start a new WiFi connection______________________________
+//_______start a new WiFi connection____________________________
 // stopp a connection, if one existed before
 // return: true=connected (OK)
 bool SimpleMqtt::connectingWiFiBegin()
@@ -382,12 +477,12 @@ bool SimpleMqtt::connectingWiFiBegin()
  return true;                               // connection startet
 }
 
-//_____wait for WiFi connection to be established_______________
+//_______wait for WiFi connection to be established_____________
 // Sets smyIP
 // return: true=connection established
 bool SimpleMqtt::connectingWiFi() { return connectingWiFi(1); }
 
-//_____wait n times for WiFi connection to be established_______
+//_______wait n times for WiFi connection to be established_____
 // Waiting time = wifiWaitMsMax * attempts
 // Sets smyIP
 // return: true=connection established
@@ -400,7 +495,7 @@ bool SimpleMqtt::connectingWiFi(int attempts)
   sMyIP=WiFi.localIP().toString();          // get ip
   return true;                              // connection state
  }
- //-----try to connect------------------------------------------
+ //------try to connect-----------------------------------------
  if(attempts<1) attempts=1;                 //try min. 1x
  int i=wifiWaitMsMax/100;                   //100ms waiting step
  if(i<1) i=1;                               // minimum 100ms
@@ -415,23 +510,23 @@ bool SimpleMqtt::connectingWiFi(int attempts)
   i--;                                      // decrement counter
   if(DEBUG_MQTT){Serial.print("."); if(i%50==0) Serial.println("");}
  }
- //-----connected to WLAN (access point)?----------------------
+ //------connected to WLAN (access point)?---------------------
  if(i<1)                                    // counter=minimum
  { 
   if(!isWiFiConnected())
-  {//-----not connected to WLAN---------------------------------
+  {//----not connected to WLAN----------------------------------
    if(DEBUG_MQTT) Serial.println("connectingWiFi(): time-out!");
    sMyIP=NO_IP;                             // no IP
    return false;                            // connection state
   }
  }
- //-----success WiFi new connection/reconnect------------------
+ //------success WiFi new connection/reconnect-----------------
  sMyIP=WiFi.localIP().toString();           // get IP
  if(DEBUG_MQTT) Serial.println("\nconnectingWiFi(): New connection to "+String(ssid_)+", IP="+sMyIP+" - OK");
  return true;                               // connection state
 }
 
-//_____disconnect a WiFi connection_____________________________
+//_______disconnect a WiFi connection___________________________
 // return: true=disconnected, false=could not disconnect Wifi
 bool SimpleMqtt::disconnectWiFi()
 {
@@ -450,19 +545,19 @@ bool SimpleMqtt::disconnectWiFi()
   if(DEBUG_MQTT) Serial.println("disconnectWiFi(): OK");
   return true;
  }
- //-----error while disconnecting-------------------------------
+ //------error while disconnecting------------------------------
  if(!isWiFiConnected()) {
   //conState|=BIT_WIFI_DIS;
   if(DEBUG_MQTT) Serial.println("disconnectWiFi(): No Wifi - OK");
   return true;
  }
- //-----other error/state---------------------------------------
+ //------other error/state--------------------------------------
  if(DEBUG_MQTT){Serial.print("disconnectWiFi(): Error #");Serial.println(WiFi.status());}
  conState|=BIT_CONN_ERROR;                  // set error bit
  return false;
 }
 
-//_____is client connected to WiFi (WLAN)?______________________
+//_______is client connected to WiFi (WLAN)?____________________
 // uses WiFi.status()
 // If there was no change of status, the status word is not
 // changed. The current status becomes the old status.
@@ -487,13 +582,13 @@ bool SimpleMqtt::isWiFiConnected() {
   //.....next connecting with ConnectingBegin().................
   wifiConnectingCounter=0;
  }
- //-----Make the current status the old status------------------
+ //------make the current status the old status-----------------
  if(bWiFiNow) conState|=BIT_WIFI_LAST; // set last WiFi state
  else conState&=(~BIT_WIFI_LAST);      // clear last WiFi state
  return bWiFiNow;
 }
 
-//_____is WiFi new connected?___________________________________
+//_______is WiFi new connected?_________________________________
 // just read conState, NO WiFi.status() call!
 // return: true = new connected
 bool SimpleMqtt::isWiFiConnectedNew()
@@ -503,7 +598,7 @@ bool SimpleMqtt::isWiFiConnectedNew()
  return wifiConNew;
 }
 
-//_____is WiFi new disconnected?________________________________
+//_______is WiFi new disconnected?______________________________
 // just read conState, NO WiFi.status() call!
 // return: true = new disconnected
 bool SimpleMqtt::isWiFiDisconnectedNew()
@@ -513,7 +608,7 @@ bool SimpleMqtt::isWiFiDisconnectedNew()
  return wifiDisNew;
 }
 
-//_____get WiFi signal strength (or ? on error)_________________
+//_______get WiFi signal strength (or ? on error)_______________
 // return: signal strength or ? on error
 String SimpleMqtt::getsSignal() 
 {
@@ -521,11 +616,11 @@ String SimpleMqtt::getsSignal()
  return String("?");
 }
 
-//**************************************************************
+// *************************************************************
 // methods for mqtt connection
-//**************************************************************
+// *************************************************************
 
-//_____wait for WiFi connection, then connect to MQTT server____
+//_______wait for WiFi connection, then connect to MQTT server__
 // return: true=MQTT connected
 bool SimpleMqtt::connectWiFiMQTT()
 {
@@ -538,31 +633,32 @@ bool SimpleMqtt::connectWiFiMQTT()
  return connectMQTT();                 // try to connect
 }
 
-//_____try to connect to MQTT server____________________________
+//_______try to connect to MQTT server__________________________
 // return: true = connected to MQTT broker
 //         details in connState
 bool SimpleMqtt::connectMQTT()
 {
  int iRet=0;
+ if(!isWiFiConnected()) return false;
  //------is client already connected to MQTT broker?------------
  if(isMQTTConnected()) return true;
  //------(try to) connect to MQTT server (normal case)----------
  for(int i=3; i>0; i--)
- {//----try to connect to MQTT server---------------------------
+ {//-----try to connect to MQTT server--------------------------
   setServer(mqtt_.c_str(), port_);
   if(PubSubClient::connect(sMQTTClientName.c_str()))
-  {//---connected to MQTT server: subscribe topics--------------
+  {//----connected to MQTT server: subscribe topics-------------
    if(!isMQTTConnected()) return false;
    iRet=changeSubscribe(sTopicBase, sTopicBase); // 
    if(iRet==0 || iRet==32)
-   {//-----subscribe all topics is OK---------------------------
+   {//---subscribe all topics is OK-----------------------------
     if(STARTINFO_ALLOW)
      publish(STARTINFO_TOPIC, sTopicBase.c_str());//start message
      if(DEBUG_MQTT) Serial.println("connectMQTT(): OK");
     return true;                       // connected!
    }
    else
-   {//-----could not subscribe topics---------------------------
+   {//---could not subscribe topics-----------------------------
     if(DEBUG_MQTT) Serial.println("connectMQTT(): Subscribe Error");
     PubSubClient::disconnect();        // try again
    }
@@ -576,18 +672,18 @@ bool SimpleMqtt::connectMQTT()
  return false;                         // no connection
 }
 
-//_____is mqtt connection ok? (no: reconnect)___________________
+//_______is mqtt connection ok? (no: reconnect)_________________
 // return: true=connected to MQTT server
 // MUST always be called in main loop (for receive!)
 bool SimpleMqtt::checkMQTT()
 {
  if(!isMQTTConnected()) return false;  // no MQTT connection
- //-----if connected to broker, do loop function----------------
+ //------if connected to broker, do loop function---------------
  PubSubClient::loop();                // message received?
  return true;
 }
 
-//_____is mqtt connection ok?___________________________________
+//_______is mqtt connection ok?_________________________________
 // uses WiFi.status() and PubSubClient::connected()
 // If there was no change of status, the status word is not
 // changed. The current status becomes the old status.
@@ -608,14 +704,14 @@ bool SimpleMqtt::isMQTTConnected()
   conState |= BIT_MQTT_DIS;            // set disconnection bit
   conState &= (~BIT_MQTT_CON);         // forget connect bit
  }
- //-----Make the current status the old status------------------
+ //------make the current status the old status-----------------
  if(bMqttNow) conState|=BIT_MQTT_LAST; // set last WiFi state
  else conState&=(~BIT_MQTT_LAST);      // clear last WiFi state
  return bMqttNow;
 }
 
 
-//_____is MQTT new connected?___________________________________
+//_______is MQTT new connected?_________________________________
 // just read conState, NO PubSubClient::connected() call!
 // return: true = new connection to MQTT broker
 bool SimpleMqtt::isMQTTConnectedNew()
@@ -625,7 +721,7 @@ bool SimpleMqtt::isMQTTConnectedNew()
  return mqttConNew;
 }
 
-//_____is MQTT new disconnected?________________________________
+//_______is MQTT new disconnected?______________________________
 // just read conState, NO PubSubClient::connected() call!
 // return: true = new disconnection from MQTT broker
 bool SimpleMqtt::isMQTTDisconnectedNew()
@@ -635,15 +731,15 @@ bool SimpleMqtt::isMQTTDisconnectedNew()
  return mqttDisNew;
 }
 
-//**************************************************************
+// *************************************************************
 //    mqtt (main) loop control
-//**************************************************************
+// *************************************************************
 
-//_____control mqtt in main loop (with reconnect)_______________
+//_______control mqtt in main loop (true: with reconnect)_______
 // calls checkMQTT(); that MUST be called every loop
 bool SimpleMqtt::doLoop(void) { return(doLoop(true)); }
   
-//_____control mqtt in main loop (without reconnect)____________
+//_______control mqtt in main loop (without reconnect)__________
 // calls checkMQTT(); that MUST be called every loop
 // uses public functions 
 // String mqttloopGet(String sPayload)
@@ -654,7 +750,7 @@ bool SimpleMqtt::doLoop(bool tryToReconnect)
 {
  bool bRet;
  //======SECTION 1: action at the beginning of loop=============
- //-----process set requests------------------------------------
+ //------process set requests-----------------------------------
  if(iSet>0)
  {
   for(int i=0; i<numTopicSet; i++)
@@ -671,7 +767,7 @@ bool SimpleMqtt::doLoop(bool tryToReconnect)
    }  
   }
  }
- //-----process sub requests------------------------------------
+ //------process sub requests-----------------------------------
  if(iSub>0)
  {
   for(int i=0; i<numTopicSub; i++)
@@ -698,12 +794,12 @@ bool SimpleMqtt::doLoop(bool tryToReconnect)
  return bRet;                               // result checkMQTT
 }
 
-//**************************************************************
+// *************************************************************
 //    internal callback method
 //    MUST be called by global callback routine!
-//**************************************************************
+// *************************************************************
 
-//_____internal callback method_________________________________
+//_______internal callback method_______________________________
 // MQTT: inspect all subscribed incoming messages
 // * If "get" topic is valid, the appropriate bit is set in iGet
 // * If "set" topic is valid, the appropriate bit is set in iSet
@@ -712,8 +808,8 @@ bool SimpleMqtt::doLoop(bool tryToReconnect)
 void SimpleMqtt::callback_(char* topic, byte* payload, unsigned int length)
 {
  int i=-1;
- //=====SECTION 1: convert payload to array (and show message)==
- //-----build get/set/...topic----------------------------------
+ //======SECTION 1: convert payload to array (and show message)=
+ //------build get/set/...topic---------------------------------
  int lenTopic=strlen(topic);
  char cTopic[5+lenTopic];
  sprintf(cTopic,"%s/get",sTopicBase.c_str()); // "get" topic
@@ -748,39 +844,39 @@ void SimpleMqtt::callback_(char* topic, byte* payload, unsigned int length)
    if(strcmp(settype,aTopicSet[i].c_str())==0)
    {
     if(DEBUG_MQTT) Serial.printf("callback_(): ==> MQTT command set %s=%s\n",(aTopicSet[i]).c_str(),cPayload);
-    iSet|=(1<<i);                       // trigger get request
-    aPayloadSet[i]=String(cPayload);    // save payload
-    i=-1;                               // finish for
-    break; // set-command?
+    iSet|=(1<<i);                      // trigger get request
+    aPayloadSet[i]=String(cPayload);   // save payload
+    i=-1;                              // finish for
+    break;                             // set-command?
    }
   }
   if(DEBUG_MQTT && i!=-1) Serial.printf("callback_(): *** no valid set topic found ***\n");
  }
- //=====SECTION 4: special MQTT (input) messages================
+ //======SECTION 4: special MQTT (input) messages===============
  for(i=0; i<numTopicSub; i++) {
   if(strcmp(aTopicSub[i].c_str(),topic)==0){
    if(DEBUG_MQTT) Serial.printf("callback_(): ==> MQTT special: topic %s, payload %s\n",(aTopicSub[i]).c_str(),cPayload);
    iSub|=(1<<i);                       // trigger get request
    aPayloadSub[i]=String(cPayload);    // save payload
-   break; // set-command?
+   break;                              // set-command?
   }
  }
 }
 
-//**************************************************************
+// *************************************************************
 //    mqtt working methods
-//**************************************************************
+// *************************************************************
 
-//_____set new topic base, unsubscribe old topics, subscribe new
-//     topics___________________________________________________
+//_______set new topic base, unsubscribe old topics, subscribe
+//       new topics_____________________________________________
 // return: true: topics changes, false: error
 bool SimpleMqtt::changeTopicBase(String newBase)
 {
  return changeTopicBase(sTopicBase, newBase);
 }
 
-//_____set new topic base, unsubscribe old topics, subscribe new
-//     topics___________________________________________________
+//_______set new topic base, unsubscribe old topics, subscribe
+//       new topics_____________________________________________
 // return: true: topics changes, false: error
 bool SimpleMqtt::changeTopicBase(String oldBase, String newBase)
 {
@@ -808,7 +904,7 @@ bool SimpleMqtt::changeTopicBase(String oldBase, String newBase)
  return false;
 }
 
-//_____prepare to send a message with topic out of aPayloadPub__
+//_______prepare to send a message with topic out of aPayloadPub
 void SimpleMqtt::sendPubIndex(int index, String payload)
 {
  if((index<0) || (index>=TOPIC_MAX)) return;
@@ -816,10 +912,10 @@ void SimpleMqtt::sendPubIndex(int index, String payload)
  aPayloadPub[index]=payload;
 }
 
-//_____force (simulate) a get-, set-, sub- or pub-message_______
+//_______force (simulate) a get-, set-, sub- or pub-message_____
 bool SimpleMqtt::simpleMqttDo(String type, String topic, String payload)
 {
- //-----get message---------------------------------------------
+ //------get message--------------------------------------------
  if(type=="get") {
   for(int i=0; i<numTopicGet; i++) {
    if(topic==aTopicGet[i]) {
@@ -829,7 +925,7 @@ bool SimpleMqtt::simpleMqttDo(String type, String topic, String payload)
   }
   return false;
  }
- //-----set message---------------------------------------------
+ //------set message--------------------------------------------
  if(type=="set") {
   for(int i=0; i<numTopicSet; i++) {
    if(topic==aTopicSet[i]) {
@@ -840,7 +936,7 @@ bool SimpleMqtt::simpleMqttDo(String type, String topic, String payload)
   }
   return false;
  }
- //-----sub message---------------------------------------------
+ //------sub message--------------------------------------------
  if(type=="sub") {
   for(int i=0; i<numTopicSub; i++) {
    if(topic==aTopicSub[i]) {
@@ -851,7 +947,7 @@ bool SimpleMqtt::simpleMqttDo(String type, String topic, String payload)
   }
   return false;
  }
- //-----pub message---------------------------------------------
+ //------pub message--------------------------------------------
  if(type=="pub") {
   for(int i=0; i<numTopicPub; i++) {
    if(topic==aTopicPub[i]) {
@@ -865,23 +961,31 @@ bool SimpleMqtt::simpleMqttDo(String type, String topic, String payload)
  return false;
 }
 
-//**************************************************************
-//     connection state
-//**************************************************************
+//_______force (simulate) a get-, set-, sub- or pub-message_____
+// same as simpleMqttDo()
+bool SimpleMqtt::forceXXXAnswer(String type, String topic, String payload)
+{
+  return simpleMqttDo(type, topic, payload);
+}
 
-//_____is error bit set?________________________________________
+
+// *************************************************************
+//     connection state
+// *************************************************************
+
+//_______is error bit set?______________________________________
 bool SimpleMqtt::isConnectError() {
  bool bConErr=(conState&BIT_CONN_ERROR)>0 ? true : false;
  return bConErr;
 }
 
-//_____clear connection error bit_______________________________
+//_______clear connection error bit_____________________________
 void SimpleMqtt::resetConnectError() {conState&=(~BIT_CONN_ERROR);}
 
-//_____convert conState to unsigned long number_________________
+//_______convert conState to unsigned long number_______________
 unsigned long SimpleMqtt::getConState() {return conState;}
 
-//_____convert conState to HEX string___________________________
+//_______convert conState to HEX string_________________________
 String SimpleMqtt::getConStateHex() {
  unsigned long ul1=conState; 
  int i=sizeof(unsigned long);
@@ -899,17 +1003,17 @@ String SimpleMqtt::getConStateHex() {
  return s1;
 }
 
-//**************************************************************
+// *************************************************************
 //    helper methods
-//**************************************************************
+// *************************************************************
 
-//_____subscribe get-, set-, sub-topic__________________________
+//_______subscribe get-, set-, sub-topic________________________
 // return: true=OK, false on error
 bool SimpleMqtt::subscribeAllTopics(){
  return subscribeAllTopics(sTopicBase); 
 }
 
-//_____subscribe get-, set-, sub-topic for given topic__________
+//_______subscribe get-, set-, sub-topic for given topic________
 // return: true=OK, false on error
 bool SimpleMqtt::subscribeAllTopics(String topicBasis)
 {
@@ -925,12 +1029,12 @@ bool SimpleMqtt::subscribeAllTopics(String topicBasis)
  return ret;
 }
 
-//_____unsubscribe get-, set-, sub-topic________________________
+//_______unsubscribe get-, set-, sub-topic______________________
 // return: true=OK, false on error
 bool SimpleMqtt::unsubscribeAllTopics()
 { return unsubscribeAllTopics(sTopicBase); }
 
-//_____unsubscribe get-, set-, sub-topic________________________
+//_______unsubscribe get-, set-, sub-topic______________________
 // return: true=OK, false on error
 bool SimpleMqtt::unsubscribeAllTopics(String topicBasis)
 {
@@ -949,18 +1053,18 @@ bool SimpleMqtt::unsubscribeAllTopics(String topicBasis)
  return ret;
 }
 
-//_____unsubscribe old, subscribe new topic base________________
+//_______unsubscribe old, subscribe new topic base______________
 // return: 0=OK, 16=no mqtt server, 32=unsubscribe error,
 //         64=subscribe error
 int SimpleMqtt::changeSubscribe(String oldTopic, String newTopic)
 {
  int ret=0;                                 // no error
  if(DEBUG_MQTT) Serial.print("changeSubscribe(): ");
- //-----sTopicBase is new, try to update MQTT-server------------
+ //------sTopicBase is new, try to update MQTT-server-----------
  if(PubSubClient::connected())
  {
    
-  //------unsubscribe old topics--------------------------------
+  //-----unsubscribe old topics---------------------------------
   if(!unsubscribeAllTopics(oldTopic)) ret|=32;// unsubscribe error
   //-----subscribe new topics-----------------------------------
   if(!subscribeAllTopics(newTopic)) 
@@ -980,10 +1084,10 @@ int SimpleMqtt::changeSubscribe(String oldTopic, String newTopic)
  return ret;                                // 
 }
 
-//_____send answers to get-/set-requests________________________
+//_______send answers to get-/set-requests______________________
 void SimpleMqtt::sendRet()
 {
- //-----send (ret) answers for get request----------------------
+ //------send (ret) answers for get request---------------------
  for(int i=0; i<numTopicGet; i++)
  {
   if((iRet&(1<<i))>0) 
@@ -991,11 +1095,11 @@ void SimpleMqtt::sendRet()
    String t1=sTopicBase;
    t1+="/ret/";
    t1+=aTopicGet[i];
-   if(publish(t1.c_str(),aPayloadRet[i].c_str()))
+   if(publish(t1.c_str(),aPayloadRet[i].c_str(), aRetainedGet[i]))
     iRet&=(~(1<<i));
   }
  }
- //-----send (retset) answers for set requests------------------
+ //------send (retset) answers for set requests-----------------
  for(int i=0; i<numTopicSet; i++)
  {
   if((iRetSet&(1<<i))>0) 
@@ -1003,29 +1107,29 @@ void SimpleMqtt::sendRet()
    String t1=sTopicBase;
    t1+="/ret/";
    t1+=aTopicSet[i];
-   if(publish(t1.c_str(),aPayloadSet[i].c_str()))
+   if(publish(t1.c_str(),aPayloadSet[i].c_str(), aRetainedSet[i]))
    {
     iRetSet&=(~(1<<i));
     iSet&=(~(1<<i));
    }
   }
  }
- //-----send publish message------------------------------------
+ //------send publish message-----------------------------------
  for(int i=0; i<numTopicPub; i++)
  {
   if((iPub&(1<<i))>0) 
   {
-   if(publish(aTopicPub[i].c_str(),aPayloadPub[i].c_str()))
+   if(publish(aTopicPub[i].c_str(),aPayloadPub[i].c_str(), aRetainedPub[i]))
    {
     iPub&=(~(1<<i));
    }
   }
  }
- //-----delete all requests anyway------------------------------
+ //------delete all requests anyway-----------------------------
  iRet=0; iRetSet=0; iPub=0;
 }
 
-//_____convert Array to json format_____________________________
+//_______convert Array to json format___________________________
 String SimpleMqtt::jsonArray(String what)
 {
  int num=0;
@@ -1046,19 +1150,19 @@ String SimpleMqtt::jsonArray(String what)
  return s1;
 }
 
-//_____split string to array 1__________________________________
+//_______split string to array 1________________________________
 int SimpleMqtt::splitString(String str, String aStr[])
 {
  return splitString(str, aStr, ",", TOPIC_MAX);
 }
 
-//_____split string to array 2__________________________________
+//_______split string to array 2________________________________
 int SimpleMqtt::splitString(String str, String aStr[], String delimiter)
 {
  return splitString(str, aStr, delimiter, TOPIC_MAX);
 }
 
-//_____split string to array 3___________________________________
+//_______split string to array 3_________________________________
 // return: array aStr and number of elements in array aStr
 int SimpleMqtt::splitString(String str, String aStr[], 
  String delimiter, int imax)
@@ -1078,15 +1182,53 @@ int SimpleMqtt::splitString(String str, String aStr[],
  return anz;
 }
 
-//**************************************************************
-//     internal methods
-//**************************************************************
+//_______split string to boolean array 1 (0=false, 1=true)______
+int SimpleMqtt::splitString2Bool(String str, boolean bStr[])
+{
+ return splitString2Bool(str, bStr, ",", TOPIC_MAX);
+}
 
-//_____generate get answers in array aPayloadRet[]______________
+//_____split string to boolean array 2 (0=false, 1=true)______
+int SimpleMqtt::splitString2Bool(String str, boolean bStr[], String delimiter)
+{
+ return splitString2Bool(str, bStr, delimiter, TOPIC_MAX);
+}
+
+//_____split string to boolean array 3 (0=false, 1=true)______
+int SimpleMqtt::splitString2Bool(String str, boolean bStr[], String delimiter, int imax)
+{
+ int anz=0;
+ int len1=delimiter.length();
+ if(len1<1) return anz; 
+ if(str.length()<1) return anz;
+ int pos1=0,pos2=-1;
+ while((pos2=str.indexOf(delimiter,pos1))>=0)
+ {
+  String s1=str.substring(pos1,pos2);
+  s1.replace(" ","");
+  //Serial.print("|"+s1);
+  bStr[anz++] = (s1=="1");                  // true or false
+  if(anz>=imax) return anz;
+  pos1=pos2+len1;
+ }
+ String s2=str.substring(pos1);
+ s2.replace(" ","");
+ //Serial.print("|"+s2);
+ bStr[anz++] = (s2=="1");                   // true or false
+ //Serial.println();
+ return anz;
+}
+
+// *************************************************************
+//     internal methods
+// *************************************************************
+
+//_______generate get answers in array aPayloadRet[]____________
 // uses  : iGet, iRet, aPayloadRet[], numTopicXXX, aTopicXXX[]
-//         XXX = Get, Set, Sub, Pub
+//         XXX = Get, Set, Sub, Pub (for help answer ;)
 // calls : external function doGetAnswer()
 // result: answers in array aPayloadRet[]
+// called by doLoop()
 void SimpleMqtt::createGetAnswer()
 {
  if(iGet>0)
@@ -1096,7 +1238,8 @@ void SimpleMqtt::createGetAnswer()
    if((iGet&(1<<i))>0)
    {
     //-----"automatic" get answers-----------------------------
-    if(aTopicGet[i]=="help") {
+    if((aTopicGet[i]=="help") || (aTopicGet[i]=="?") ||
+      ((language_=='d') && (aTopicGet[i]=="hilfe"))) {
      String p1="\r\nget: ";                 // list all get
      for(int i=0; i<numTopicGet; i++) p1+=aTopicGet[i]+"|";
      p1+="\r\nset: ";                       // list all set
@@ -1123,8 +1266,12 @@ void SimpleMqtt::createGetAnswer()
     String s1=simpleGet(aTopicGet[i]);
     if(s1.length()>0)
     {
-     if(aTopicGet[i]=="help" && s1.charAt(0)=='+')
-      s1=aPayloadRet[i]+s1.substring(1);    // append to help
+     if((aTopicGet[i]=="help") || (aTopicGet[i]=="?") ||
+      ((language_=='d') && (aTopicGet[i]=="hilfe")))
+     {
+      if(s1.charAt(0)=='+') 
+       s1=aPayloadRet[i]+s1.substring(1);    // append to help 
+     }
      aPayloadRet[i]=s1;
      iRet|=(1<<i);
     }
@@ -1134,25 +1281,83 @@ void SimpleMqtt::createGetAnswer()
  }
 }
 
-//**************************************************************
+// *************************************************************
 //     methods for eeprom read/write
-//**************************************************************
+// *************************************************************
 
-//_____write topic to eeprom as topicBase_______________________
-// Value in EEPROM: MQddtopicBase0UU0 dd=length of topicBase,
-//                  0=VALUE 0 (not char!)
-// return: length of topic (or -1 on error)
+//_______eeprom return value as string__________________________
+// iResult >=0: OK (length),
+// Read error:  -1 EEPROM not allowed, -2 wrong begin, 
+//              -3 wrong length, -4 read error, -5 wrong end
+// Write error: -11 EEPROM not allowed, -12 sData too long, 
+//              -13 eeprom size too small, -14 write error
+String SimpleMqtt::getsEepromStatus(int iResult)
+{
+ if(iResult>=0) return "OK";
+ String s1="";
+ if(language_=='d')
+ {
+  switch(iResult)
+  {
+   case  -1: s1="EEPROM read: EEPROM-Verwendung nicht erlaubt"; break;
+   case  -2: s1="EEPROM read: falsche Startsequenz"; break;
+   case  -3: s1="EEPROM read: falsche Datenlaenge"; break;
+   case  -4: s1="EEPROM read: Lesefehler"; break;
+   case  -5: s1="EEPROM read: falsche Endesequenz"; break;
+   case -11: s1="EEPROM write: EEPROM-Verwendung nicht erlaubt"; break;
+   case -12: s1="EEPROM write: Daten zu lang"; break;
+   case -13: s1="EEPROM write: EEPROM zu klein"; break;
+   case -14: s1="EEPROM write: Schreibfehler"; break;
+   default:  s1="Unbekannter Fehler Nr. "+String(iResult); break;
+  }
+ }
+ else
+ {
+  switch(iResult)
+  {
+   case  -1: s1="EEPROM read: EEPROM not allowed"; break;
+   case  -2: s1="EEPROM read: wrong begin"; break;
+   case  -3: s1="EEPROM read: wrong length"; break;
+   case  -4: s1="EEPROM read: read error"; break;
+   case  -5: s1="EEPROM read: wrong end"; break;
+   case -11: s1="EEPROM write: EEPROM not allowed"; break;
+   case -12: s1="EEPROM write: sData too long"; break;
+   case -13: s1="EEPROM write: eeprom size too small"; break;
+   case -14: s1="EEPROM write: write error"; break;
+   default:  s1="Unknown error #"+String(iResult); break;
+  }
+ }
+ return s1;
+}
+
+//_______write topic to eeprom as topicBase_____________________
+// Value in EEPROM: QQddxxxxx0UU0qqeeyyyyy0UU0
+// dd=length of topicBase xxxxx, ee=length of string data yyyyy
+// 0=VALUE 0 (not char!), Q,U are chars
+// return: >=0: OK (length),
+//         -11 EEPROM not allowed, -12 topic too long, 
+//         -13 eeprom size too small, -14 write error
 int SimpleMqtt::eepromWriteTopicBase(String topic)
 {
- int ret=-1;
- if(!USE_EEPROM) return -1;
- //-----------fits topic into eeprom?---------------------------
- int len=topic.length();
- if(len>TOPIC_MAXLEN) return ret;
- if(len>(EEPROM_SIZE-8)) return ret;
+ unsigned int iStart1=0;
+ unsigned int len;
+ int iRet=-11;
+ if(!USE_EEPROM) return -11;
+ //-----------does topic fit into eeprom?-----------------------
+ len=topic.length();
+ if(len>TOPIC_MAXLEN) return -12;
+ if((len+iStart1)>(eepromSize_-8)) return -13;
+ //-----------does topic + myData fit into eeprom?--------------
+ int iResult2=0;
+ String sMyData=eepromReadMyData(iResult2);
+ if(iResult2==-1) return -11;          // EEPROM not allowed
+ if(iResult2>=0)                       // >0 length of sMyData
+ {
+  if((len+iStart1+iResult2)>(eepromSize_-16)) return -13;
+ }
  //-----------length OK, write topic + check values-------------
  char ca[len+8];
- ca[0]='M';
+ ca[0]='Q';
  ca[1]='Q';
  ca[2]=(len/10)+'0';
  ca[3]=(len-10*(len/10))+'0';
@@ -1162,16 +1367,23 @@ int SimpleMqtt::eepromWriteTopicBase(String topic)
  ca[len+5]='U';                        // U=0x55=0101 0101
  ca[len+6]='U';                        // U=0x55=0101 0101 
  ca[len+7]=0;                          // value 0
-//sprintf(ca,"MQ%02d%s\000UU\000",len,topic.c_str());//does not work
- ret=eepromWriteBlock(ca,0,len+8);     // write to EEPROM
+ iRet=eepromWriteBlock(ca,iStart1,len+8);// write to EEPROM
  //if(DEBUG_MQTT) Serial.println("eepromWriteTopicBase(): ca="+String(ca)+", ret="+String(ret));
- if(ret!=(len+8)) ret=-1;              // write error
+ if(iRet<0) len=-14;                   // write error
+ else {
+  if(((unsigned int)iRet)!=(len+8)) len=-14; // write error
+ }
+ //-----------append myData (if exists ;) to topic--------------
+ if(iResult2>=0) {
+  eepromWriteMyData(sMyData);
+ }
  return len;                           // OK: topic length
 }
 
-//_____read topic from eeprom or use default value______________
-// Value in EEPROM: MQddtopicBase0UU0 dd=length of topicBase,
-//                  0=VALUE 0 (not char!)
+//_______read topic base from eeprom____________________________
+// Value in EEPROM: QQddxxxxx0UU0qqeeyyyyy0UU0
+// dd=length of topicBase xxxxx, ee=length of string data yyyyy
+// 0=VALUE 0 (not char!), Q,U are chars
 // return: read TopicBase ("" on error)
 //         iResult >=0: OK (length),
 //         -1 EEPROM not allowed, -2 wrong begin, 
@@ -1181,22 +1393,23 @@ String SimpleMqtt::eepromReadTopicBase(int& iResult)
  String s1="";
  if(USE_EEPROM) {
   char c4[5];
+  unsigned int len1, len2;
   int len4=eepromReadBlock(c4,0,4);
   if(len4==4)
   {//---------wrong length of begin sequence--------------------
-   if((c4[0]=='M') && (c4[1]=='Q'))
+   if((c4[0]=='Q') && (c4[1]=='Q'))
    {//---------EEPROM starts with MQ-----------------------------
-    int len1=10*(c4[2]-'0')+(c4[3]-'0');
-    if(len1<=(EEPROM_SIZE-4))
+    len1=10*(c4[2]-'0')+(c4[3]-'0');
+    if(len1<=(eepromSize_-4))
     {//--------stored topic length fits into eeprom--------------
      char ca[len1+4];
-     int len2=eepromReadBlock(ca,4,len1+4);
+     len2=eepromReadBlock(ca,4,len1+4);
      if(len2==(len1+4))
      {//-------correct number of chars read----------------------
       if(ca[len1]==0 && ca[len1+1]=='U' && ca[len1+2]=='U' && ca[len1+3]==0)
       {//------tail of topic OK----------------------------------
        s1=String(ca);
-       iResult=0;
+       iResult=s1.length();
       }
       else { iResult=-5; }
      }
@@ -1211,13 +1424,13 @@ String SimpleMqtt::eepromReadTopicBase(int& iResult)
  else { iResult=-1; }
  //-----------show debug info-----------------------------------
  if(DEBUG_MQTT) {
-  if(iResult==0) Serial.println("eepromReadTopicBase(): "+s1+" - OK");
+  if(iResult>=0) Serial.println("eepromReadTopicBase(): "+s1+" - OK");
   else Serial.printf("eepromReadTopicBase(): failed! iResult=%d\n",iResult);
  }
  return s1;
 }
 
-//_____read topic from eeprom or use default value______________
+//_______read topic from eeprom, ignore result__________________
 // Value in EEPROM: MQddtopicBase0UU0 dd=length of topicBase,
 //                  0=VALUE 0 (not char!)
 // return: TopicBase (or "" on error)
@@ -1228,68 +1441,202 @@ String SimpleMqtt::eepromReadTopicBase()
  return s1;
 }
 
-//_____erase identifier of topicBase____________________________
+//_______erase identifier of topicBase__________________________
 // return true: erase ok, false: error occurred
 bool SimpleMqtt::eepromEraseTopicBase()
 {
  if(!USE_EEPROM) return false;
  char ca[5]={0,0,0,0,0};
- int ret=eepromWriteBlock(ca,0,5);
- if(ret==5) {
-  if(DEBUG_MQTT) Serial.println("eepromEraseTopicBase() OK"); 
-  int iResult;
-  String s1=eepromReadTopicBase(iResult);
-  if(iResult!=0) return true;
+ int iStart1=0;
+ //-----read byData (directly after topicBase)------------------
+ int iResult1, iResult2;
+ String sMyData=eepromReadMyData(iResult2);
+ //------erase topicBase----------------------------------------
+ int ret=eepromWriteBlock(ca,iStart1,4);
+ String s1=eepromReadTopicBase(iResult1);
+ if(ret!=4 || iResult1>=0)
+ {
+  if(DEBUG_MQTT) Serial.println("eepromEraseTopicBase() Error"); 
+  return false;                        // topicBase still exists
  }
- if(DEBUG_MQTT) Serial.println("eepromEraseTopicBase() Error"); 
+ if(DEBUG_MQTT) Serial.println("eepromEraseTopicBase() OK"); 
+ //-----topicBase erased: write sMyData (if exist)--------------
+ if(iResult2>=0) eepromWriteMyData(sMyData);
+ return true;
+}
+
+//_______write string data to eeprom (after topicBase)__________
+// Value in EEPROM: QQddxxxxx0UU0qqeeyyyyy0UU0
+// dd=length of topicBase xxxxx, ee=length of string data yyyyy
+// 0=VALUE 0 (not char!), Q,U are chars
+// return: >=0: OK (length),
+//         -11 EEPROM not allowed, -12 sData too long, 
+//         -13 eeprom size too small
+int SimpleMqtt::eepromWriteMyData(String sData)
+{
+ unsigned int iStart2;
+ unsigned int len;
+ int iResult, iRet=-11;
+ if(!USE_EEPROM) return -11;
+ //-----------calculate start position in EEPROM----------------
+ String sTop=eepromReadTopicBase(iResult);
+ if(iResult==-1) return -11;           // EEPROM not allowed
+ if(iResult<0) iStart2=0;              // no/wrong topic base
+          else iStart2=sTop.length()+8;// next free position
+ //-----------does data string fit into eeprom?-----------------
+ len=sData.length();
+ if(len>EEPROM_DATA_MAX) return -12;
+ if((len+iStart2)>(eepromSize_-16)) return -13;
+ //-----------length OK, write topic + check values-------------
+//Serial.println("eepromWriteMyData(): sData="+sData);
+ char ca[len+8];
+ ca[0]='q';
+ ca[1]='q';
+ ca[2]=(len/10)+'0';
+ ca[3]=(len-10*(len/10))+'0';
+ ca[4]=0;
+ strcat(ca,sData.c_str());
+ ca[len+4]=0;                          // value 0
+ ca[len+5]='U';                        // U=0x55=0101 0101
+ ca[len+6]='U';                        // U=0x55=0101 0101 
+ ca[len+7]=0;                          // value 0
+ iRet=eepromWriteBlock(ca,iStart2,len+8);// write to EEPROM
+ //if(DEBUG_MQTT) Serial.println("eepromWriteMyData(): ca="+String(ca)+", ret="+String(ret));
+ if(iRet<0) len=-14;                   // write error
+ else {
+  if(((unsigned int)iRet)!=(len+8)) len=-14; // write error
+ }
+ return len;                           // OK: topic length
+}
+
+//_______read string data from eeprom___________________________
+// Value in EEPROM: QQddxxxxx0UU0qqeeyyyyy0UU0
+// dd=length of topicBase xxxxx, ee=length of string data yyyyy
+// 0=VALUE 0 (not char!), Q,U are chars
+// return: read string data ("" on error)
+//         iResult >=0: OK (length),
+//         -1 EEPROM not allowed, -2 wrong begin, 
+//         -3 wrong length, -4 read error, -5 wrong end
+String SimpleMqtt::eepromReadMyData(int& iResult)
+{
+ String s1=String("");
+ int iStart2;
+ unsigned int len1, len2;
+ char c4[5];
+ if(USE_EEPROM) {
+  //----------calculate start position in EEPROM----------------
+  String sTop=eepromReadTopicBase(iResult);
+  if(iResult==-1) return s1;
+   if(iResult<0) iStart2=0;              // no/wrong topic base
+            else iStart2=sTop.length()+8;// next free position
+  int len4=eepromReadBlock(c4,iStart2,4);
+  if(len4==4)
+  {//---------wrong length of begin sequence--------------------
+   if((c4[0]=='q') && (c4[1]=='q'))
+   {//--------EEPROM starts with MQ-----------------------------
+    len1=10*(c4[2]-'0')+(c4[3]-'0');
+    if(len1<=(eepromSize_-4))
+    {//-------stored string data length fits into eeprom--------
+     char ca[len1+4];
+     len2=eepromReadBlock(ca,iStart2+4,len1+4);
+     if(len2==(len1+4))
+     {//-------correct number of chars read----------------------
+      if(ca[len1]==0 && ca[len1+1]=='U' && ca[len1+2]=='U' && ca[len1+3]==0)
+      {//------tail of topic OK----------------------------------
+       s1=String(ca);
+       iResult=s1.length();
+      }
+      else { iResult=-5; }
+     }
+     else { iResult=-4; }
+    }
+    else { iResult=-3; }
+   }
+   else { iResult=-2; }
+  }
+  else { iResult=-2; }
+ }
+ else { iResult=-1; }
+ //-----------show debug info-----------------------------------
+ if(DEBUG_MQTT) {
+  if(iResult>=0) Serial.println("eepromReadTopicBase(): "+s1+" - OK");
+  else Serial.printf("eepromReadTopicBase(): failed! iResult=%d\n",iResult);
+ }
+ return s1;
+}
+
+//_______read string data from eeprom, ignore result____________
+String SimpleMqtt::eepromReadMyData()
+{
+ int iResult=0;
+ String s1=eepromReadMyData(iResult);
+ return s1;
+}
+
+//_______erase string data from eeprom__________________________
+bool SimpleMqtt::eepromEraseMyData()
+{
+ if(!USE_EEPROM) return false;
+ int iResult, iStart2;
+ char ca[5]={0,0,0,0,0};
+ //-----------calculate start position in EEPROM---------------
+ String sTop=eepromReadTopicBase(iResult);
+ if(iResult<0) iStart2=0;
+          else iStart2=iResult+8;
+ //-----------erase block---------------------------------------
+ int ret=eepromWriteBlock(ca,iStart2,4);
+ if(ret==4) {
+  String s1=eepromReadMyData(iResult);
+  if(iResult<0) {
+   if(DEBUG_MQTT) Serial.println("eepromEraseMyData() OK"); 
+   return true;
+  }
+ }
+ if(DEBUG_MQTT) Serial.println("eepromEraseMyData() Error"); 
  return false;
 }
 
-//_____read a block from eeprom_________________________________
-// uses: EEPROM_SIZE
+//_______read a block from eeprom_______________________________
+// uses: eepromSize_
 // return: number of read bytes or -1|-2|-3|-4 on error
 size_t SimpleMqtt::eepromReadBlock(char* data, 
        unsigned long address, unsigned long len)
 {
  unsigned long i;
- //-----check input---------------------------------------------
+ //------check input--------------------------------------------
  if(len==0)    return -1;
  //if(len<0)     return -2;
  //if(address<0) return -3;
    if((address+len)>eepromSize_) len=eepromSize_-address;
- //-----read bytes----------------------------------------------
+ //------read bytes---------------------------------------------
  if(DEBUG_MQTT) Serial.print("eepromReadBlock(): ");
  eeprom_->begin(eepromSize_);
  for(i=0; i<len; i++) {
   data[i]=(char)(eeprom_->read(address+i));
-  if(DEBUG_MQTT) Serial.printf("%ld=%c=%d|",i,data[i],data[i]);
+  if(DEBUG_MQTT) Serial.printf("%ld=%c=%d|",(address+i),data[i],data[i]);
  }
  eeprom_->end();
  if(DEBUG_MQTT) Serial.printf("=> %ld bytes read.\n",len);
  return len;
 }
 
-//_____write a block to eeprom__________________________________
-// uses: EEPROM_SIZE
+//_______write a block to eeprom________________________________
+// uses: eepromSize_
 // return: number of written bytes or -1|-2|-3|-4 on error
 size_t SimpleMqtt::eepromWriteBlock(char* data, 
        unsigned long address, unsigned long len)
 {
  unsigned long i=0, numBytes=0;
  uint8_t b1, b2;
- //-----check input---------------------------------------------
+ //------check input--------------------------------------------
  if(len==0)    return -1;
  //if(len<0)     return -2;
  //if(address<0) return -3;
- //if((address+len)>EEPROM_SIZE) len=EEPROM_SIZE-address; // or return -4
- if((address+len)>eepromSize_) len=eepromSize_-address;
- 
- //-----write bytes---------------------------------------------
+ if((address+len)>eepromSize_) return -4;
+ //------write bytes--------------------------------------------
  if(DEBUG_MQTT) Serial.print("eepromWriteBlock(): ");
- //if(eepromBegin_<3) eepromBegin();
- 
  eeprom_->begin(eepromSize_);
- //.....write all bytes.........................................
+ //......write all bytes........................................
  for(i=0; i<len; i++)
  {
   b1=data[i];
@@ -1298,7 +1645,7 @@ size_t SimpleMqtt::eepromWriteBlock(char* data,
   delay(1);
   b2=eeprom_->read(address+i);
   if(b1==b2) numBytes++;
-  if(DEBUG_MQTT) {Serial.printf("%ld=%c|",i,b2); }
+  if(DEBUG_MQTT) {Serial.printf("%ld=%c|",(address+i),b2); }
  }
  eeprom_->end();
  if(len==numBytes)

@@ -142,7 +142,7 @@ void setup() {
  //-----prepare mqtt start--------------------------------------
  // Use setTopicBaseDefault() (or constructor) instead of 
  // setTopicBase(), to use topic base from eeprom on restart ;)
- setTopicBaseDefault(TOPIC_BASE);
+ client.setTopicBaseDefault(TOPIC_BASE);    // default base
  client.begin();                            // setup objects
  client.setCallback(callback);              // mqtt receiver
  client.setTopics(TOPIC_GET,TOPIC_SET,TOPIC_SUB,TOPIC_PUB);
