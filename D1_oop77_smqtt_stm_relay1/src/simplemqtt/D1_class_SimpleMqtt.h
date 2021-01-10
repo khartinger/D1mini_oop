@@ -1,4 +1,4 @@
-//_____D1_class_SimpleMqtt.h__________________200705-201219_____
+//_____D1_class_SimpleMqtt.h__________________200705-200110_____
 // The SimpleMqtt class is suitable for D1 mini (ESP8266) and 
 // and ESP32 D1mini and extends the PubSubClient class to make
 // MQTT easy to use.
@@ -45,13 +45,15 @@
 // 2020-12-16 add setLanguage (language_, SIMPLEMQTT_LANGUAGE)
 // 2020-12-19 connectMQTT(): add line 2 if(!isWiFiConnected...
 //            EEPROM: add eeprom...myData()
+// 2021-01-03 add retained functionality
+// 2021-01-10 TOPIC_MAX changed to 16
 // Hardware: D1 mini OR ESP32 D1mini
 // Released into the public domain.
 
 #ifndef D1_CLASS_SIMPLEMQTT_H
 #define D1_CLASS_SIMPLEMQTT_H
 #include "Arduino.h"                   // D1, ...
-#ifdef ESP8266
+#if defined(ESP8266) || defined(D1MINI)
  #include <ESP8266WiFi.h>              // network connection
 #endif
 #if defined(ESP32) || defined(ESP32D1)
@@ -81,7 +83,7 @@ void   simpleSub(String sTopic, String sPayload);
 #define MQTT_PORT    1883              // default mqtt port
 #define NO_IP        "xxx.xxx.xxx.xxx" // 
 
-#define  TOPIC_MAX                  12 // max. topics to sub
+#define  TOPIC_MAX                  16 // max. topics to sub
 #define  NOTHING_TODO                0 // # mqtt do nothing
 #define  MQTT_RECONNECT_MS         200 //
 #define  TIMEOUT_WIFI_CONNECT_MS  8000 // wait for WLAN
@@ -142,6 +144,9 @@ class SimpleMqtt : public PubSubClient {
   String aPayloadRet[TOPIC_MAX];       // payload for ret topics
   String aPayloadSub[TOPIC_MAX];       // payload for sub topics
   String aPayloadPub[TOPIC_MAX];       // payload for pub topics
+  boolean aRetainedGet[TOPIC_MAX];     // get topics
+  boolean aRetainedSet[TOPIC_MAX];     // set topics
+  boolean aRetainedPub[TOPIC_MAX];     // pub topics
 
  //------constructor & co---------------------------------------
  public:
@@ -200,6 +205,20 @@ class SimpleMqtt : public PubSubClient {
   int    setTopicSub(String sAllSub);
   //_____set all pub(lish)-topics as comma separated strings____
   int    setTopicPub(String sAllPub);
+  
+  //_____set all get-topics as comma separated strings__________
+  //     plus comma separated retained string (0=false, 1=true)
+  int    setTopicGet(String sAllGet, String sAllRetainedGet);
+  //_____set all set-topics as comma separated strings__________
+  //     plus comma separated retained string (0=false, 1=true)
+  int    setTopicSet(String sAllSet, String sAllRetainedSet);
+  //_____set all pub(lish)-topics as comma separated strings____
+  //     plus comma separated retained string (0=false, 1=true)
+  int    setTopicPub(String sAllPub, String sAllRetainedPub);
+  //_____set retained for index in a..Get|a..Set|a..Pub_________
+  boolean setRetainedIndex(String sType, int index, boolean bRetained);
+  //_____ret all retained flags as string_______________________
+  String getsRetainedAll();
 
  //------methods for Wifi (WLAN)--------------------------------
   //_____try to connect to WiFi, wait max. wifiWaitMsMax________
@@ -254,8 +273,11 @@ class SimpleMqtt : public PubSubClient {
   bool   changeTopicBase(String oldBase, String newBase);
   //_____prepare to send a message with topic out of aPayloadPub
   void   sendPubIndex(int index, String payload);
+  void   sendPubIndex(int index, String payload, boolean retain);
   //_____force (simulate) a get-, set-, sub- or pub-message_____
   bool   simpleMqttDo(String type, String topic, String payload);
+  //_____same as simpleMqttDo(): force (simulate) a XXX-message___
+  bool   forceXXXAnswer(String type, String topic, String payload);
 
  //------connection state---------------------------------------
   //_____is error bit set?______________________________________
@@ -286,8 +308,14 @@ class SimpleMqtt : public PubSubClient {
   int    splitString(String str, String aStr[]);
   //_____split string to array 2________________________________
   int    splitString(String str, String aStr[], String delimiter);
-  //_____split string to array 3_________________________________
+  //_____split string to array 3________________________________
   int    splitString(String str, String aStr[], String delimiter, int imax);
+  //_____split string to boolean array 1 (0=false, 1=true)______
+  int    splitString2Bool(String str, boolean bStr[]);
+  //_____split string to boolean array 2 (0=false, 1=true)______
+  int    splitString2Bool(String str, boolean bStr[], String delimiter);
+  //_____split string to boolean array 3 (0=false, 1=true)______
+  int    splitString2Bool(String str, boolean bStr[], String delimiter, int imax);
 
  //------internal methods---------------------------------------
   //_____generate get answers in array aPayloadRet[]____________

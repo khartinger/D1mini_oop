@@ -1,4 +1,4 @@
-//_____D1_class_SimpleMqtt.cpp________________200705-201219_____
+//_____D1_class_SimpleMqtt.cpp________________200705-200110_____
 // The SimpleMqtt class is suitable for D1 mini (ESP8266) and 
 // and ESP32 D1mini and extends the PubSubClient class to make
 // MQTT easy to use.
@@ -45,6 +45,8 @@
 // 2020-12-16 add setLanguage (language_, SIMPLEMQTT_LANGUAGE)
 // 2020-12-19 connectMQTT(): add line 2 if(!isWiFiConnected...
 //            EEPROM: add eeprom...myData()
+// 2021-01-03 add retained functionality
+// 2021-01-10 TOPIC_MAX changed to 16
 // Hardware: D1 mini OR ESP32 D1mini
 // Released into the public domain.
 
@@ -138,6 +140,12 @@ void SimpleMqtt::setup()
  numTopicSet=0;                        // no set topics yet
  numTopicSub=0;                        // no sub topics yet
  numTopicPub=0;                        // no pub topics yet
+ //-----set all messages to retained = false--------------------
+ for(int i=0; i<TOPIC_MAX; i++) {
+  aRetainedGet[i]=false;
+  aRetainedSet[i]=false;
+  aRetainedPub[i]=false;
+ }
  eeprom_=new EEPROMClass;              // eeprom object
  begin(0);                             // sets sTopicBase
 }
@@ -338,6 +346,85 @@ int SimpleMqtt::setTopicPub(String sAllPub)
  numTopicPub=splitString(sAllPub, aTopicPub);
  return numTopicPub;
 }
+
+//_______set all get-topics as comma separated strings__________
+//       plus comma separated retained string (0=false, 1=true)
+int SimpleMqtt::setTopicGet(String sAllGet, String sAllRetainedGet)
+{
+ splitString2Bool(sAllRetainedGet, aRetainedGet);
+ numTopicGet=splitString(sAllGet, aTopicGet);
+ return numTopicGet;
+}
+
+//_______set all set-topics as comma separated strings__________
+//       plus comma separated retained string (0=false, 1=true)
+int SimpleMqtt::setTopicSet(String sAllSet, String sAllRetainedSet)
+{
+ splitString2Bool(sAllRetainedSet, aRetainedSet);
+ numTopicSet=splitString(sAllSet, aTopicSet);
+ return numTopicSet;
+}
+
+//_______set all pub(lish)-topics as comma separated strings____
+//       plus comma separated retained string (0=false, 1=true)
+int SimpleMqtt::setTopicPub(String sAllPub, String sAllRetainedPub)
+{
+ splitString2Bool(sAllRetainedPub, aRetainedPub);
+ numTopicPub=splitString(sAllPub, aTopicPub);
+ return numTopicPub;
+}
+
+//_______set retained for index in a..Get|a..Set|a..Pub_________
+boolean SimpleMqtt::setRetainedIndex(String sType, int index, boolean bRetained)
+{
+ if(sType=="get") {
+  if(index>=0 && index<numTopicGet) {
+   aRetainedGet[index]=bRetained;
+   return true;
+  }
+ }
+ if(sType=="set") {
+  if(index>=0 && index<numTopicSet) {
+   aRetainedSet[index]=bRetained;
+   return true;
+  }
+ }
+ if(sType=="pub") {
+  if(index>=0 && index<numTopicPub) {
+   aRetainedPub[index]=bRetained;
+   return true;
+  }
+ }
+ return false;
+}
+
+//_____ret all retained flags as string_______________________
+String SimpleMqtt::getsRetainedAll()
+{
+ String s1="get: ";
+ int i;
+ for(i=0; i<numTopicGet; i++)
+ {
+  if(i>0) s1+=",";
+  s1+=String(aRetainedGet[i]);
+ }
+ s1+="\nset: ";
+ for(i=0; i<numTopicSet; i++)
+ {
+  if(i>0) s1+=",";
+  s1+=String(aRetainedSet[i]);
+ }
+ s1+="\npub: ";
+ for(i=0; i<numTopicPub; i++)
+ {
+  if(i>0) s1+=",";
+  s1+=String(aRetainedPub[i]);
+ }
+ s1+="\n";
+ return s1;
+}
+
+
 
 // *************************************************************
 // methods for Wifi (WLAN)
@@ -875,6 +962,14 @@ bool SimpleMqtt::simpleMqttDo(String type, String topic, String payload)
  return false;
 }
 
+//_______force (simulate) a get-, set-, sub- or pub-message_____
+// same as simpleMqttDo()
+bool SimpleMqtt::forceXXXAnswer(String type, String topic, String payload)
+{
+  return simpleMqttDo(type, topic, payload);
+}
+
+
 // *************************************************************
 //     connection state
 // *************************************************************
@@ -1001,7 +1096,7 @@ void SimpleMqtt::sendRet()
    String t1=sTopicBase;
    t1+="/ret/";
    t1+=aTopicGet[i];
-   if(publish(t1.c_str(),aPayloadRet[i].c_str()))
+   if(publish(t1.c_str(),aPayloadRet[i].c_str(), aRetainedGet[i]))
     iRet&=(~(1<<i));
   }
  }
@@ -1013,7 +1108,7 @@ void SimpleMqtt::sendRet()
    String t1=sTopicBase;
    t1+="/ret/";
    t1+=aTopicSet[i];
-   if(publish(t1.c_str(),aPayloadSet[i].c_str()))
+   if(publish(t1.c_str(),aPayloadSet[i].c_str(), aRetainedSet[i]))
    {
     iRetSet&=(~(1<<i));
     iSet&=(~(1<<i));
@@ -1025,7 +1120,7 @@ void SimpleMqtt::sendRet()
  {
   if((iPub&(1<<i))>0) 
   {
-   if(publish(aTopicPub[i].c_str(),aPayloadPub[i].c_str()))
+   if(publish(aTopicPub[i].c_str(),aPayloadPub[i].c_str(), aRetainedPub[i]))
    {
     iPub&=(~(1<<i));
    }
@@ -1088,15 +1183,53 @@ int SimpleMqtt::splitString(String str, String aStr[],
  return anz;
 }
 
+//_______split string to boolean array 1 (0=false, 1=true)______
+int SimpleMqtt::splitString2Bool(String str, boolean bStr[])
+{
+ return splitString2Bool(str, bStr, ",", TOPIC_MAX);
+}
+
+//_____split string to boolean array 2 (0=false, 1=true)______
+int SimpleMqtt::splitString2Bool(String str, boolean bStr[], String delimiter)
+{
+ return splitString2Bool(str, bStr, delimiter, TOPIC_MAX);
+}
+
+//_____split string to boolean array 3 (0=false, 1=true)______
+int SimpleMqtt::splitString2Bool(String str, boolean bStr[], String delimiter, int imax)
+{
+ int anz=0;
+ int len1=delimiter.length();
+ if(len1<1) return anz; 
+ if(str.length()<1) return anz;
+ int pos1=0,pos2=-1;
+ while((pos2=str.indexOf(delimiter,pos1))>=0)
+ {
+  String s1=str.substring(pos1,pos2);
+  s1.replace(" ","");
+  //Serial.print("|"+s1);
+  bStr[anz++] = (s1=="1");                  // true or false
+  if(anz>=imax) return anz;
+  pos1=pos2+len1;
+ }
+ String s2=str.substring(pos1);
+ s2.replace(" ","");
+ //Serial.print("|"+s2);
+ bStr[anz++] = (s2=="1");                   // true or false
+ //Serial.println();
+ return anz;
+}
+
 // *************************************************************
 //     internal methods
 // *************************************************************
 
 //_______generate get answers in array aPayloadRet[]____________
 // uses  : iGet, iRet, aPayloadRet[], numTopicXXX, aTopicXXX[]
-//         XXX = Get, Set, Sub, Pub
+//         XXX = Get, Set, Sub, Pub (for help answer ;)
 // calls : external function doGetAnswer()
 // result: answers in array aPayloadRet[]
+// called by doLoop()
 void SimpleMqtt::createGetAnswer()
 {
  if(iGet>0)

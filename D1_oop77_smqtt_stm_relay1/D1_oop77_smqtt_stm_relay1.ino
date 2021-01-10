@@ -1,4 +1,4 @@
-//_____D1_oop77_smqtt_stm_relay1.ino__________200714-201219_____
+//_____D1_oop77_smqtt_stm_relay1.ino__________200714-210110_____
 // This program for a D1 mini (or ESP32 D1mini) is used to
 // switch a relay or (AC) light bulb on and off via MQTT.
 // Further functions are:
@@ -41,8 +41,9 @@
 // Important: Example needs a MQTT-broker!
 // Created by Karl Hartinger, December 08, 2020.
 // Changes:
-// 2020-11-08 New
-// 2020-12-19 update SimpleMqtt (myData...)
+// 2021-01-04 change topic base, update SimpleMqtt
+//            add retain .../ret/licht
+// 2021-01-10 add displayLed
 // Released into the public domain.
 
 #define D1MINI          1              // ESP8266 D1mini +pro
@@ -53,30 +54,31 @@
 #include "src/statemachine/D1_class_StatemachineBlink.h"
 
 #define  DEBUG77        true //false
-#define  VERSION77      "2020-12-19 D1_oop77_smqtt_stm_relay1"
-#define  FUNCTION77     "Switch a relay by \"relay/1/set/relay on|off|toggle\""
+#define  VERSION77      "2021-01-10 D1_oop77_smqtt_stm_relay1"
 #define  TOPIC_BASE     "relay/1"
-#define  TOPIC_GET      "?,help,version,ip,topicbase,eeprom,all,lamp,relay,current,current0,debug"
-#define  TOPIC_SET      "topicbase,eeprom0,relay,current0"
+#define  FUNCTION77     "Switch a relay by \"" TOPIC_BASE "/set/lamp on|off|toggle\""
+#define  TOPIC_GET      "?,help,version,ip,topicbase,eeprom,all,lamp,relay,current,current0,leds,debug"
+#define  TOPIC_SET      "topicbase,eeprom0,lamp,relay,current0,leds,debug"
 #define  TOPIC_SUB      ""
 #define  TOPIC_PUB      ""
 
 //_______sensors, actors, global variables______________________
 #if defined(ESP32) || defined(ESP32D1)
- //#define  PIN_LED1      18             // D5=18 or D8=5
+ #define  PIN_LED1       5             // D5=18 or D8=5
  #define  PIN_LED_G     19
  #define  PIN_LED_R     23
- #define  PIN_LED1       5             // D5 or D8...
  #define  PIN_RELAY     22
  Relay2AC relay1(PIN_RELAY,2,2.0,0.05); // relais Ioff=50mA
 #else
- //#define  PIN_LED1      D5             // D5=18 or D8=5
+ #define  PIN_LED1      D8             // D5 or D8...
  #define  PIN_LED_G     D6
  #define  PIN_LED_R     D7
- #define  PIN_LED1      D8             // D5 or D8...
  #define  PIN_RELAY     D1
  Relay2AC relay1(PIN_RELAY,2.0,0.05);  // relais Ioff=50mA 
 #endif
+bool     displayLeds=true;             // leds on or off
+bool     bSendDebugPeriodic=false;     //send debug info by MQTT
+
 
 //_______MQTT communication_____________________________________
 //SimpleMqtt client("..ssid..", "..password..","mqttservername");
@@ -104,11 +106,14 @@ String simpleGet(String sPayload)
 {
  String p1;                            // help string
  //-------------------------------------------------------------
+ if((sPayload=="?")||(sPayload=="help"))
+  return String(VERSION77)+"+"+String(FUNCTION77);
+ //-------------------------------------------------------------
  if(sPayload=="version") return String(VERSION77);
  //-------------------------------------------------------------
  if(sPayload=="topicbase") return client.getsTopicBase();
  //-------------------------------------------------------------
-  if(sPayload=="eeprom") {
+ if(sPayload=="eeprom") {
   int iResult1, iResult2;
   String s1=client.eepromReadTopicBase(iResult1);
   String s2=client.eepromReadMyData(iResult2);
@@ -133,7 +138,10 @@ String simpleGet(String sPayload)
   p1+="\"Relais\":"+String(relay1.getRelayStatus())+",";
   p1+="\"Current\":"+String(relay1.getCurrent(),3)+",";
   p1+="\"Current0\":"+String(relay1.getCurrentOn(),3)+",";
-  p1+="\"NominalCurrent\":"+String(relay1.getNominalCurrent(),3);
+  p1+="\"NominalCurrent\":"+String(relay1.getNominalCurrent(),3)+",";
+  p1+="\"Leds\":"+String(displayLeds)+",";
+  p1+="\"Debug\":";
+  if(bSendDebugPeriodic) p1+="\"on\""; else p1+="\"off\"";
   p1+="}";
   return p1;
  }
@@ -146,6 +154,21 @@ String simpleGet(String sPayload)
  //-------------------------------------------------------------
  if(sPayload=="current0") return String(relay1.getCurrentOn(),3);
  //-------------------------------------------------------------
+ if(sPayload=="leds") return String(displayLeds);
+ //-------------------------------------------------------------
+ if(sPayload=="debug") {
+  if(bSendDebugPeriodic)
+  {
+   char ca[48];
+   uint16_t mil=stm.getBeginMillis();
+   //uint16_t block=ESP.getMaxFreeBlockSize();
+   //uint8_t  frag=ESP.getHeapFragmentation();
+   //sprintf(ca, "millis=%d maxBlock=%d frag=%d %%\0",mil,block,frag);
+   sprintf(ca, "millis=%d",mil);
+   return String(ca);
+  }
+ }
+ //-------------------------------------------------------------
  return String("");                         // wrong Get command
 }
 
@@ -154,8 +177,8 @@ String simpleGet(String sPayload)
 // return: ret answer payload for set command
 String simpleSet(String sTopic, String sPayload)
 {
- String p1=String("");                      // help string
- float  iOn;                                // help value current
+ String p1;                            // help string
+ float  iOn;                           // help value current
  //-------------------------------------------------------------
  if(sTopic=="topicbase") {                  // new topic base?
   client.changeTopicBase(sPayload);         // change base
@@ -178,24 +201,30 @@ String simpleSet(String sTopic, String sPayload)
   return p1;
  }
  //-------------------------------------------------------------
+ if(sTopic=="lamp") {                       // set relay
+  if(sPayload=="?") p1="1=on|0=off|-1=toggle. Now ";
+  if(sPayload=="on"  || sPayload=="1") relay1.lampOn();
+  if(sPayload=="off" || sPayload=="0") relay1.lampOff();
+  if(sPayload=="toggle" || sPayload=="-1") relay1.lampToggle();
+  p1+=String(relay1.getCurrentStatus());
+  return p1;
+ }
+ //-------------------------------------------------------------
  if(sTopic=="relay") {                      // set relay
-    if(sPayload=="?") p1="1=on|0=off|-1=toggle";
-  if(sPayload=="1" || sPayload=="on"){
-   relay1.on(); p1=String("Relay_on");
+  if(sPayload=="on" || sPayload=="1"){
+   relay1.on(); p1=String("Relay on");
   }
-  if(sPayload=="0" || sPayload=="off"){
-   relay1.off(); p1=String("Relay_off");
+  if(sPayload=="off" || sPayload=="0"){
+   relay1.off(); p1=String("Relay off");
   }
   if(sPayload=="-1" || sPayload=="toggle"){
-   relay1.toggle(); p1=String("Relay_toggle");
+   relay1.toggle(); p1=String("Relay toggle");
   }
-  p1=p1+"._Now_"+String(relay1.getRelayStatus());
   if(DEBUG77) Serial.println(p1);
   return p1;
  }
  //-------------------------------------------------------------
  if(sTopic=="current0") {                  // set current limit
-    //iOn=atof(sPayload.c_str());
   iOn=sPayload.toFloat();
   if((iOn>0)&&(iOn<=relay1.getNominalCurrent()))
   {
@@ -209,6 +238,25 @@ String simpleSet(String sTopic, String sPayload)
   {
    return String("limit not set");
   }
+ }
+ //-------------------------------------------------------------
+ if(sTopic=="leds") {                       // display by leds?
+  if(sPayload=="off" || sPayload=="0") displayLeds=false;
+  else 
+  {
+   displayLeds=true;
+   led1.setParams(stm.getState(),1,24,-1);  //flash led1 endless
+  }
+  return String(displayLeds);
+ }
+ //-------------------------------------------------------------
+ // debug: turn sending debug info on or off
+ if(sTopic=="debug") {                      // set debug mode
+  if(sPayload=="on" || sPayload=="1"){
+   bSendDebugPeriodic=true; p1=String("on");
+  }
+  else { bSendDebugPeriodic=false; p1=String("off"); }
+  return p1;
  }
  //-------------------------------------------------------------
  return String("");                         // wrong set command
@@ -230,7 +278,7 @@ void setup() {
  led1.doBlink(stm);                         //1.state: led D8 on
  pinMode(PIN_LED_G, OUTPUT);                // pin is output
  pinMode(PIN_LED_R, OUTPUT);                // pin is output
-  //------(try to) read current0 from eeprom---------------------
+ //------(try to) read current0 from eeprom---------------------
  int iResult;
  String sMyData=client.eepromReadMyData(iResult);
  if(iResult>0)
@@ -248,7 +296,7 @@ void setup() {
    }
   }
  }
-  //------set nominal current, test relay------------------------
+ //------set nominal current, test relay------------------------
  relay1.setNominalCurrent(2.00);            // adjust to 2.00 A
  if(relay1.isOK())                          // relay off-on-off
  {//.....current measuring ok...................................
@@ -292,9 +340,11 @@ void setup() {
  digitalWrite(PIN_LED_R, 1);                // red on = orange
  if(DEBUG77) Serial.println("setup(): ip: "+client.getsMyIP());
  //------setup mqtt---------------------------------------------
+ client.setLanguage('e');                   //e=english,d=german
  client.setCallback(callback);
  client.setTopicBaseDefault(TOPIC_BASE);
  client.setTopics(TOPIC_GET,TOPIC_SET,TOPIC_SUB,TOPIC_PUB);
+ client.setRetainedIndex("get",7,true);     // 7=lamp
  client.begin();
  //------connect to mqtt broker---------------------------------
  if(client.connectMQTT())
@@ -319,7 +369,13 @@ void loop() {
  //======(1) do, independent on the network, ...================
  //------do every state-----------------------------------------
  if(DEBUG77) { sSerial=String(state); sSerial+=+": "; }
- //------do every 0.5 seconds-----------------------------------
+ if(!displayLeds)
+ {
+  digitalWrite(PIN_LED_G, 0);               // green off
+  digitalWrite(PIN_LED_R, 0);               // red off
+  led1.off(stm);                            // blinkled off
+ }
+ //------do every second----------------------------------------
  if((state%10)==0)
  {//.....check lamp state.......................................
   sSerial+=String(relay1.getCurrent(),3);
@@ -341,26 +397,32 @@ void loop() {
  {
   if(client.isMQTTConnected())
   {//....WiFi yes, MQTT yes -> LED green........................
-   digitalWrite(PIN_LED_G, 1);              // green on
-   digitalWrite(PIN_LED_R, 0);              // red off
+   if(displayLeds) {
+    digitalWrite(PIN_LED_G, 1);              // green on
+    digitalWrite(PIN_LED_R, 0);              // red off
+   }
    //sSerial+=" WiFi yes+MQTT yes ";
   }
   else
   {//....WiFi yes, MQTT no -> LED orange........................
-   digitalWrite(PIN_LED_G, 1);              // green on +
-   digitalWrite(PIN_LED_R, 1);              // red on = orange
+   if(displayLeds) {
+    digitalWrite(PIN_LED_G, 1);              // green on +
+    digitalWrite(PIN_LED_R, 1);              // red on = orange
+   }
    //sSerial+=" WiFi yes+MQTT no ";
   }
  }
  else
  {//.....WiFi no -> LED red.....................................
-  digitalWrite(PIN_LED_G, 0);               // green off
-  digitalWrite(PIN_LED_R, 1);               // red on
+  if(displayLeds) {
+   digitalWrite(PIN_LED_G, 0);               // green off
+   digitalWrite(PIN_LED_R, 1);               // red on
+  }
   //sSerial+=" WiFi no ";
  }
  //======(4) do at the end of the loop ...======================
- led1.doBlink(stm);                    // led D8 action
- stm.loopEnd();                        // state end
+ if(displayLeds) led1.doBlink(stm);         // led D8 action
+ stm.loopEnd();                             // state end
  //------show only non empty states-----------------------------
  if(DEBUG77){ if(sSerial.length()>5) Serial.println(sSerial); }
 }

@@ -3,7 +3,7 @@
 // the current (by Analog In)
 // Class can be used with or without measuring the current:
 // on, off, toggle ............... switch the relay directly
-//xxxxxxxxxxx lampOn, lampOff, lampToggle ... measure current, switch relay
+// lampOn, lampOff, lampToggle ... measure current, switch relay
 // Hardware: (1) WeMos D1 mini
 //           (2) Relais shield
 //           (3) Current transformer (ASM-010) and selfmade 
@@ -14,6 +14,7 @@
 // Created by Karl Hartinger, December 07, 2020.
 // Updates:
 // 2020-12-07 New
+// 2020-12-16 add lampXXX()
 // Released into the public domain.
 
 #ifndef D1_CLASS_RELAY2AC_H
@@ -51,6 +52,9 @@ class Relay2AC : public Relay2 {
   bool   set(int val);                 // switch relay
   bool   setCurrentOn(float aOn);      // set current limit on
   bool   setNominalCurrent(float inom_A); // nominal current
+  bool   lampOn();                     // try to turn on current
+  bool   lampOff();                    // try to turn off current
+  bool   lampToggle();                 // try to toggle current
  //-----getter methods-----------------------------------------
   bool   isOn();                       // true: relay is on
   bool   isOff();                      // true: relay is off

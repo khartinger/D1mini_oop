@@ -2,18 +2,19 @@
 // D1 mini class for switching a relay and measuring
 // the current (by Analog In)
 // Class can be used with or without measuring the current:
-// on, off, toggle...............switch the relay directly
-// lampOn, lampOff, lampToggle...measure current, switch relay
+// on, off, toggle ............... switch the relay directly
+// lampOn, lampOff, lampToggle ... measure current, switch relay
 // Hardware: (1) WeMos D1 mini
 //           (2) Relais shield
 //           (3) Current transformer (ASM-010) and selfmade 
-//               shield D1_INA122_V2 180924 at Analog In
+//               shield D1_INA122_V3 at Analog In
 //
-// Uses class Ain (files D1_class_Ain.*)
-// Created by Karl Hartinger, November 11, 2018.
+// Uses classes Relay2 and CurrentAC !
+// (files D1_class_Relay2.* and D1_class_CurrentAC.*)
+// Created by Karl Hartinger, December 07, 2020.
 // Updates:
-// 2020-01-03 separate relay and lamp function
-// 2020-11-04 setADCmax(int ADCmax) added
+// 2020-12-07 New
+// 2020-12-16 add lampXXX()
 // Released into the public domain.
 
 #include "D1_class_Relay2AC.h"
@@ -22,7 +23,7 @@
 //    constructor & co
 // *************************************************************
 
-//_____default constructor (relay pin D1, not inverted)_________
+//_______default constructor (relay pin D1, not inverted)_______
 Relay2AC::Relay2AC() {
   int   pinRelay= RELAY2_PIN_RELAY;
   int   board   = RELAY2AC_BOARD_DEFAULT;
@@ -32,7 +33,7 @@ Relay2AC::Relay2AC() {
   setup(pinRelay, board, inom_A, ion_A, pinAin);
 }
 
-//_____constructor 2____________________________________________
+//_______constructor 2__________________________________________
 Relay2AC::Relay2AC(int pinRelay) {
   int   board  = RELAY2AC_BOARD_DEFAULT;
   float inom_A = RELAY2AC_NOMINAL_A;
@@ -41,14 +42,14 @@ Relay2AC::Relay2AC(int pinRelay) {
   setup(pinRelay, board, inom_A, ion_A, pinAin);
 }
 
-//_____constructor 3____________________________________________
+//_______constructor 3__________________________________________
 Relay2AC::Relay2AC(int pinRelay, float inom_A, float ion_A) {
   int   board  = RELAY2AC_BOARD_DEFAULT;
   int   pinAin = RELAY2AC_PIN_AIN;
   setup(pinRelay, board, inom_A, ion_A, pinAin);
 }
 
-//_____constructor 4____________________________________________
+//_______constructor 4__________________________________________
 Relay2AC::Relay2AC(int pinRelay, int boardType) {
   float inom_A = RELAY2AC_NOMINAL_A;
   float ion_A  = RELAY2AC_ON_A;
@@ -56,7 +57,7 @@ Relay2AC::Relay2AC(int pinRelay, int boardType) {
   setup(pinRelay, boardType, inom_A, ion_A, pinAin);
 }
 
-//_____constructor 5____________________________________________
+//_______constructor 5__________________________________________
 Relay2AC::Relay2AC(int pinRelay, int boardType, float inom_A, 
 float ion_A) 
 {
@@ -64,14 +65,14 @@ float ion_A)
   setup(pinRelay, boardType, inom_A, ion_A, pinAin);
 }
 
-//_____constructor 6____________________________________________
+//_______constructor 6__________________________________________
 Relay2AC::Relay2AC(int pinRelay, int boardType, float inom_A, 
 float ion_A, int pinAin) 
 {
   setup(pinRelay, boardType, inom_A, ion_A, pinAin);
 }
 
-//_____set properties to default values_________________________
+//_______set properties to default values_______________________
 void Relay2AC::setup(int pinRelay, int boardType, 
  float inom_A, float ion_A, int pinAin)
 {
@@ -92,11 +93,11 @@ void Relay2AC::setup(int pinRelay, int boardType,
 //    setter methods
 // *************************************************************
 
-//_____set relay 1=on or 0=off__________________________________
+//_______set relay 1=on or 0=off________________________________
 // return true: Relay switching state as desired
 bool Relay2AC::set(int val) 
 {
- //-----command: turn relay off---------------------------------
+ //------command: turn relay off--------------------------------
  if(val==0)
  {
   if(cac_.isOff()) return true;        // already off
@@ -105,7 +106,7 @@ bool Relay2AC::set(int val)
   if(cac_.isOff()) { changed_=true; return true; }
   return false;
  }
- //-----command: turn relay on----------------------------------
+ //------command: turn relay on---------------------------------
  if(cac_.isOn()) return true;          // already on
  on();                                 // turn relay off
  delay(RELAY2AC_DELAY_MS);             // wait until relais set
@@ -113,48 +114,84 @@ bool Relay2AC::set(int val)
  return false;
 }
 
-//_____set current limit on_____________________________________
+//_______set current limit on___________________________________
 bool Relay2AC::setCurrentOn(float aOn) {
  return(cac_.setCurrentOn(aOn));
 }
 
-//_____set nominal current______________________________________
+//_______set nominal current____________________________________
 bool Relay2AC::setNominalCurrent(float inom_A) {
  return(cac_.setNominalCurrent(inom_A)); 
+}
+
+//_______try to turn on current_________________________________
+// return: true=lamp is on, false=lamp is off
+bool Relay2AC::lampOn()
+{
+ if(getCurrentStatus()==1) return true;
+ toggle();
+ if(getCurrentStatus()==1) return true;
+ return false;
+}
+
+//_______try to turn off current________________________________
+// return: true=lamp is off, false=lamp is on
+bool Relay2AC::lampOff()
+{
+ if(getCurrentStatus()==0) return true;
+ toggle();
+ if(getCurrentStatus()==0) return true;
+ return false;
+}
+
+//_______try to toggle current__________________________________
+// return: true=lamp toggled, false=lamp NOT toggled
+bool Relay2AC::lampToggle()
+{
+ if(getCurrentStatus()==0)
+ {//-----current is off-----------------------------------------
+  toggle();
+  if(getCurrentStatus()==1) return true;
+  return false;
+ }
+ //------current is on------------------------------------------
+ toggle();
+ if(getCurrentStatus()==0) return true;
+ return false;
 }
 
 // *************************************************************
 //    getter methods
 // *************************************************************
 
-//_____true: relay is on________________________________________
+//_______true: relay is on______________________________________
 bool Relay2AC::isOn() {
  if(cac_.isChange()) changed_=true;
  return (cac_.isOn()); 
 }
 
-//_____true: relay is off_______________________________________
+//_______true: relay is off_____________________________________
 bool Relay2AC::isOff() {
  if(cac_.isChange()) changed_=true;
  return (cac_.isOn()); 
 }
 
-//_____get relay status (0=off, 1=on)___________________________
+//_______get relay status (0=off, 1=on)_________________________
 int Relay2AC::getRelayStatus() { return getSwitchStatus(); }
 
-//_____get current status (0=off, 1=on)_________________________
+//_______get current status (0=off, 1=on)_______________________
 int Relay2AC::getCurrentStatus() {
  if(cac_.isOn()) return 1;
  return 0;
 }
 
-//_____get current______________________________________________
+//_______get current____________________________________________
 float Relay2AC::getCurrent() { return cac_.getCurrent(); }
 
-//_____get current limit "on"___________________________________
+//_______get current limit "on"_________________________________
 float Relay2AC::getCurrentOn() { return cac_.getCurrentOn(); }
 
-//_____get nominal current______________________________________
+//_______get nominal current____________________________________
 float Relay2AC::getNominalCurrent() {
  return cac_.getNominalCurrent(); 
 }
@@ -163,7 +200,7 @@ float Relay2AC::getNominalCurrent() {
 //     working methods
 // *************************************************************
 
-//_____test relay: toggle relay 2x, measure current_____________
+//_______test relay: toggle relay 2x, measure current___________
 // return true relay and current measure are ok
 bool Relay2AC::isOK()
 {
