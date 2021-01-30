@@ -2,8 +2,8 @@
 Sketch: D1_oop83_test_timeconverter1.ino, Version 2021-01-29   
 [English version](./README.md "English version")   
 
-Dieses Programm dient zum Testen von Methoden der Klasse `Timeconverter1`. Das Ergebnis der Methodenaufrufe wird über die serielle Schnittstelle angezeigt (115200 Baud).    
-Die Klasse `Timeconverter1` stellt Methoden zur Umwandlung verschiedener Datum- und Zeit-Formate zur Verfügung.   
+Dieses Programm dient zum Testen von Methoden der Klasse `Timeconverter1`. Das Ergebnis der Methodenaufrufe wird &uuml;ber die serielle Schnittstelle angezeigt (115200 Baud).    
+Die Klasse `Timeconverter1` stellt Methoden zur Umwandlung verschiedener Datum- und Zeit-Formate zur Verf&uuml;gung.   
 Beispiele sind   
 * Englisches Datum ohne Bindestriche, zB 20210129
 * Englisches Datum mit Bindestrichen, zB 2021-01-29
@@ -15,7 +15,7 @@ Weitere Methoden dienen
 * zum Berechnen der Tageszahl zwischen zwei Datums,
 * zum Addieren von Sekunden oder Tagen zum aktuellen Datum, 
 * zum Feststellen, ob ein Jahr ein Schaltjahr ist oder
-* ob die Sommerzeit für ein bestimmtes Datum gilt.
+* ob die Sommerzeit f&uuml;r ein bestimmtes Datum gilt.
 
 __Ausgabe des Programms__
 ```
