@@ -38,3 +38,6 @@ T=22.53*C, H=28.28%, p=960.64hPa, a=447.49m
 22.51 | 28.27 | 961 | 448.2
 T=22.51*C, H=28.27%, p=960.57hPa, a=448.17m
 ```
+
+![BME280 I2C Adapter](./images/D1_BME280Adapter1.png "BME280 I2C Adapter")    
+_Bild 1: D1 mini mit I2C-Adapter f&uuml;r BME280_   
