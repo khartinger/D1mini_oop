@@ -1,6 +1,6 @@
 # D1 mini with BME280: Show temperature, humidity, pressure and altitude on RS-232
-Sketch: D1_oop34_BME280.ino, Version 2018-03-26   
-[Deutsche Version](./LIESMICH.md "Deutsche Version")   
+Sketch: D1_oop34_BME280.ino, Version 2021-02-01   
+[--> Deutsche Version](./LIESMICH.md "Deutsche Version")   
 
 This simple example measures temperature, humidity, pressure and altitude using a BME280 sensor and shows values on Serial (RS-232, 115200 Baud).   
    
@@ -9,6 +9,9 @@ This simple example measures temperature, humidity, pressure and altitude using 
 | temperature   | -40&deg;C...+85&deg;C | &#x00B1;1&deg;C (0,01&deg;C resolution) |
 | humidity      | 0%...100%             | &#x00B1;3%RH   |
 | pressure      | 300...1100hPa         | &#x00B1;1,0hPa |   
+   
+__Note__   
+The first value read in is usually incorrect and should not be used ;)   
    
 ## Hardware
 * WeMos D1 Mini
