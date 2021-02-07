@@ -1,9 +1,40 @@
-# D1_oop06_BH1750 
-This example measures brightness with a digital light sensor BH1750 and sends the value to Serial interface (9600 Baud).
-Default i2c address is 0x23 (other option 0x5C).
+# D1 mini with BH1750: Displaying the brightness via the serial interface
+Sketch: D1_oop06_HB1750.ino, Version 2021-02-07   
+[--> Deutsche Version](./LIESMICH.md "Deutsche Version")   
+
+
+Using a BH1750, the brightness is measured and displayed via the serial interface.   
+
+| ___BH1750___ | Value range | Tolerance |
+|:------------- |:---------------------:|:------------------------ |
+| Brightness | 0 lx ... 65535 lx | 1 lx or &#x00B1;20% |
+   
+__Note__   
+The first values read in are often incorrect.   
 
 ## Hardware
-* WeMos D1 mini
-* BH1750 light sensor on i2c bus (7-bit-address 0x23)
+1. WeMos D1 mini (OR ESP32 D1 mini)
+2. brightness sensor BH1750 on I2C bus: SCL=D1, SDA=D2, GND, 3V3 (I2C-address 0x23 or 0x5C)
 
-![D1mini BH1750](./images/BH1750.png "BH1750")
+**Example of the output on the serial interface
+```
+setup(): --Start--
+BH1750 found! I2C address is 0x23
+setup(): --Finished--
+
+1:
+2: 
+3: measurement started! 
+4:
+5: Brightness: 193 lx
+6: 
+7: measurement started! 
+8: 
+9: Brightness: 193 lx
+10: 
+```
+
+## Sensor
+
+![BH1750](./images/BH1750.png "BH1750")    
+_image 1: Sensor BH1750_   
