@@ -1,46 +1,24 @@
-# D1_oop07_BH1750_oled 
-This example measures brightness with a digital light sensor BH1750 and shows the value on a oled shield.
-Default i2c address is 0x23 (other option 0x5C).
+# D1 mini with BH1750: display of brightness on OLED 0.66"
+Sketch: D1_oop07_HB1750_oled.ino, Version 2021-02-07   
+[--> Deutsche Version](./LIESMICH.md "Deutsche Version")   
 
-The class DisplayKH extends class Adafruit_SSD1306, so you can use all commands from this class as well.
-Additionally a 5x8 pixel font is included in DisplayKH.
-The Adafruit-files in /libs are copied of the libs
-* Adafruit_SSD1306-esp8266-64x48.zip and
-* Adafruit-GFX-Library-1.1.5.zip
+Using a BH1750, the brightness is measured and shown on an OLED 0.66" display.   
 
-When using the Adafruit libs, delete the directory /libs !
-
-| files in /libs       | Size         |
-| -------------------- | ------------ |
-| Adafruit_GFX.cpp     | 32.436 Bytes |
-| Adafruit_GFX.h       |  4.944 Bytes |
-| Adafruit_SSD1306.cpp | 27.813 Bytes |
-| Adafruit_SSD1306.h   |  5.806 Bytes |
-| gfxfont.h            |    924 Bytes |
-| glcdfont.c           |  8.486 Bytes |
+| ___BH1750___ | Value range | Tolerance |
+|:------------- |:---------------------:|:------------------------ |
+| Brightness | 0 lx ... 65535 lx | 1 lx or &#x00B1;20% |
+   
+__Note__   
+The first values read in are often incorrect.   
 
 ## Hardware
-* WeMos D1 mini
-* BH1750 light sensor on i2c bus (7-bit-address 0x23)
-* OLED Shield: SSD1306, 64x48 pixel, I2C (SCL GPIO5, SDA GPIO4, OLED_RESET GPIO0)
+1. WeMos D1 mini (OR ESP32 D1 mini)
+2. brightness sensor BH1750 on I2C bus: SCL=D1, SDA=D2, GND, 3V3 (I2C-address 0x23 or 0x5C)
+3. OLED Shield: 0.66", SSD1306, 64x48 pixel, I2C @ 0x3C
 
-![D1mini BH1750](./images/BH1750.png "BH1750") ![D1mini BH1750 oled](./images/D1_oop07_BH1750_oled.png "D1mini BH1750 oled")
-
-## Class diagram
-Parameters
-* line_ .... line on the oled (1 to max. line 6)
-* text_ .... text to write (max. 10 chars or 5 big chars)
-* align_ ... align of text (default: 'l'=left. 'c'=center, 'r'=right, 'L'=left+overwrite, 'C'=center+overwrite, 'R'=right+overwrite)
-* cls_ ..... clear display (default: false = do not clear display)
-
-screen names (examples)
-* screen4 ..... 4 lines with normal chars and border arround
-* screen4i .... 4 lines with normal chars, line 1 inverted
-* screen4ii ... 4 lines with normal chars, line 1 and 3 inverted (see picture)
-
-| class DisplayKH (extends Adafruit_SSD1306) |
-| ------------------------------------------- |
-| + DisplayKH() <br> + void screen6 (int line_, String text_, char align_, bool cls_) <br> + void screen6i(int line_, String text_, char align_, bool cls_) <br> + void screen5 (int line_, String text_, char align_, bool cls_) <br> + void screen5i(int line_, String text_, char align_, bool cls_) <br> +  void screen4 (int line_, String text_, char align_, bool cls_) <br> + void screen4i(int line_, String text_, char align_, bool cls_) <br> + void screen4ii(int line_, String text_, char align_, bool cls_) <br> + void screen221(int line_, String text_, char align_, bool cls_) |
-| _screens with big character-lines_ |
-| + void screen112(int line_, String text_, char align_, bool cls_) <br> + void screen13(int line_, String text_, char align_, bool cls_) <br> + void screen12(int line_, String text_, char align_, bool cls_) <br> + void screen2 (int line_, String text_, char align_, bool cls_) |
-| - String mytrim(int max_, String txt_, char align) <br> - void scr6(int line_, String text_, char align_, bool cls_, bool invert_) <br> - void scr5(int line_, String text_, char align_, bool cls_, bool invert_) <br> - void scr4(int line_, String text_, char align_, bool cls_, bool invert_) |
+## Examples for displays
+![D1mini, BH1750 and OLED](./images/D1_bh1750ok.png "D1mini, BH1750 and OLED") ![D1mini, BH1750 and OLED](./images/D1_bh1750noic.png "D1mini, BH1750 and OLED")    
+_Fig. 1: OLED display with measured value and in case of an error (e.g. no sensor)_   
+   
+![BH1750](./images/BH1750.png "BH1750")    
+_Fig. 2: Sensor BH1750_   
