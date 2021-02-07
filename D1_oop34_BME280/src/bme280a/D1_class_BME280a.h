@@ -1,4 +1,4 @@
-﻿//_____D1_class_BME280.h______________________180326-200202_____
+﻿//_____D1_class_BME280a.h_____________________180326-200207_____
 // D1 mini class for temperature, humidity and pressure/altitude 
 // sensor BME280.
 // * temperature -40°C...85°C +-1°, 0,01°C resolution
@@ -6,14 +6,14 @@
 // * pressure    300...1100hPa +-1,0hPa 
 // Default i2c address is 0x76 (other 0x77)
 // Note
-// * begin(true) starts the I2C bus (calls Wire.begin()).
-// * Use begin() or begin(false) if the I2C bus has already
-//   been started.
+// * begin() or begin(true) starts I2C bus (calls Wire.begin()).
+// * Use begin(false) if the I2C bus has already been started.
 // Code based on Adafruit_BME280.h/.cpp and SparkFunBME280.h/.cpp
 // Created by Karl Hartinger, October 27, 2018.
 // Updates:
 // 181102 add setAddress(), getAddress(), getID()
 // 210202 add bNewBegin, begin(startI2C); setup(), getSensorName
+// 210207 add bNewResult, measuringBegin(), newResult()
 // Released into the public domain.
 
 #ifndef D1_CLASS_BME280_H
@@ -158,6 +158,7 @@ class BME280 {
   int    i2cAddress;              // i2c address
   int    status;                  // state of measuring
   bool   bNewBegin;               // true = first start
+  bool   bNewResult;              // true = new measurement value
   unsigned long lastMeasuring_;   // time of last measuring [ms]
   unsigned long waitMeasuring_;   // waiting time between 2 meas
   int32_t iHum_;                  // humidity [%]
@@ -211,11 +212,14 @@ class BME280 {
   float  getPressure();           // pressure or BME280_ERR_FLOAT
   float  getAltitude();           // altitude or BME280_ERR_FLOAT
   String float2String(float f, int len, int decimals);
- //-----helper functions----------------------------------------
- public:
-  bool     measuring();           // read values from sensor
+ //------working methods----------------------------------------
+ public: 
+  bool   measuringBegin();        // start measuring
+  bool   newResult();             // is new value available?
+ //------helper methods-----------------------------------------
+  bool   measuring();             // read values from sensor
  protected:
- //-----helper functions: i2c-access----------------------------
+ //------helper methods: i2c-access-----------------------------
   bool     write8(byte reg, byte value); // write 1 byte
   uint8_t  read8(byte reg);       // read 1 byte
   uint16_t read16(byte reg);      // read 2 byte

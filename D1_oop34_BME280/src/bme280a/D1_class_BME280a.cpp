@@ -1,4 +1,4 @@
-﻿//_____D1_class_BME280.cpp____________________180326-210202_____
+﻿//_____D1_class_BME280a.cpp___________________180326-210207_____
 // D1 mini class for temperature, humidity and pressure/altitude 
 // sensor BME280.
 // * temperature -40°C...85°C +-1°, 0,01°C resolution
@@ -6,17 +6,17 @@
 // * pressure    300...1100hPa +-1,0hPa 
 // Default i2c address is 0x76 (other 0x77)
 // Note
-// * begin(true) starts the I2C bus (calls Wire.begin()).
-// * Use begin() or begin(false) if the I2C bus has already
-//   been started.
+// * begin() or begin(true) starts I2C bus (calls Wire.begin()).
+// * Use begin(false) if the I2C bus has already been started.
 // Code based on Adafruit_BME280.h/.cpp and SparkFunBME280.h/.cpp
 // Created by Karl Hartinger, October 27, 2018.
 // Updates:
 // 181102 add setAddress(), getAddress(), getID()
 // 210202 add bNewBegin, begin(startI2C); setup(), getSensorName
+// 210207 add bNewResult, measuringBegin(), newResult()
 // Released into the public domain.
 
-#include "D1_class_BME280.h"
+#include "D1_class_BME280a.h"
 
 //**************************************************************
 //    constructor & co
@@ -45,9 +45,11 @@ void BME280::setup()
  regCtrlMeas=(SAMPLING_X1<<5)|(SAMPLING_X1<<2)|MODE_NORMAL; //MODE_FORCED
  regConfig=(STANDBY_MS_1000<<5)|(FILTER_OFF<<2);
  //-------------------------------------------------------------
- status=BME280_ERR_NO_MEAS;
- waitMeasuring_=WAIT_MEASURING_MS;
- lastMeasuring_=0;
+ status=BME280_ERR_NO_MEAS;       // error message
+ waitMeasuring_=WAIT_MEASURING_MS;// delay between measurements
+ lastMeasuring_=0;                // no last measurement time
+ bNewBegin=true;                  // first start
+ bNewResult=false;                // no measurement result yet
  //begin();
 }
 
@@ -94,7 +96,7 @@ bool BME280::begin(bool startI2C) {
  //------do the first measure (if not done before)--------------
  if(bNewBegin) {
   bNewBegin=false;
-  measuring();
+  measuringBegin();
  }
  if(status!=BME280_OK) return false;
  return true;
@@ -285,6 +287,7 @@ int BME280::getValues(float &temperature,  float &humidity,
   pressure_hPa=BME280_FP(iPre_)/100.0F;
   altitude    =BME280_FA(pressure_hPa, seaLevel_hPa);
  }
+ bNewResult=false;
  return status;
 }
 
@@ -331,6 +334,7 @@ String BME280::getsJson(int dt,int dh,int dp,int da) {
 float BME280::getTemperature()
 { 
  measuring();
+ bNewResult=false;
  if(status!=BME280_OK) return BME280_ERR_FLOAT;
  return BME280_FT(iTmp_);
 }
@@ -340,6 +344,7 @@ float BME280::getTemperature()
 float BME280::getHumidity()
 { 
  measuring();
+ bNewResult=false;
  if(status!=BME280_OK) return BME280_ERR_FLOAT;
  return BME280_FH(iHum_);
 }
@@ -349,6 +354,7 @@ float BME280::getHumidity()
 float BME280::getPressure()
 { 
  measuring();
+ bNewResult=false;
  if(status!=BME280_OK) return BME280_ERR_FLOAT;
  return BME280_FP(iPre_)/100.0F;
 }
@@ -358,6 +364,7 @@ float BME280::getPressure()
 float BME280::getAltitude()
 { 
  measuring();
+ bNewResult=false;
  if(status!=BME280_OK) return BME280_ERR_FLOAT;
  float pressure_hPa=BME280_FP(iPre_)/100.0F;
  return BME280_FA(pressure_hPa, seaLevel_hPa);
@@ -389,7 +396,8 @@ bool BME280::measuring()
  int64_t p1, v3, v4;
  //-----check the delay time between two measurements-----------
  if((millis()-lastMeasuring_) < waitMeasuring_) return false;
-  //-----read all data (3+3+2 = 8 data bytes)--------------------
+ lastMeasuring_=millis();
+ //-----read all data (3+3+2 = 8 data bytes)--------------------
  Wire.beginTransmission(i2cAddress);
  Wire.write(BME280_REG_PRESDATA);
  status=Wire.endTransmission();
@@ -467,11 +475,32 @@ bool BME280::measuring()
  float atmospheric = BME280_FP(iPre_) / 100.0F;
  altitude_= 44330.0 * (1.0 - pow(atmospheric / sea, 0.1903));
  //Serial.print(", h="); Serial.println(altitude_);
+ bNewResult=true;
  return true;
 }
 
 //**************************************************************
-//    helper functions: i2c-access
+//       working methods
+//**************************************************************
+
+//_______start measuring________________________________________
+// return: true = measurement could be started
+//         false = no new measurement process could be started
+bool BME280::measuringBegin()
+{
+ bNewResult=false;
+ return measuring();
+}
+
+//_______is/are new measurement value(s) available?_____________
+// return: true = measurement finished, no new value has been 
+//         read yet
+//         false = (At least) one new value was read 
+//         or a new measuring process was started.
+bool BME280::newResult() { return bNewResult; }
+
+//**************************************************************
+//       helper methods: i2c-access
 //**************************************************************
 
 //_____i2c: write 1 byte________________________________________

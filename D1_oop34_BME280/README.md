@@ -1,8 +1,9 @@
 # D1 mini with BME280: Show temperature, humidity, pressure and altitude on RS-232
-Sketch: D1_oop34_BME280.ino, Version 2021-02-01   
+Sketch: D1_oop34_BME280.ino, Version 2021-02-07   
 [--> Deutsche Version](./LIESMICH.md "Deutsche Version")   
 
-This simple example measures temperature, humidity, pressure and altitude using a BME280 sensor and shows values on Serial (RS-232, 115200 Baud).   
+This sample programme shows how to measure temperature, humidity, air pressure and altitude using the BME280 sensor. The values are measured at intervals of 2 seconds and displayed via the serial interface (RS-232, 115200 baud).   
+If you use a BMP280 sensor instead of the BME280, the humidity value is always 0, because this sensor cannot measure humidity ;) 
    
 | ___BME280___  | Range                 | Tolerance     |
 |:------------- |:---------------------:|:------------- |
@@ -11,7 +12,7 @@ This simple example measures temperature, humidity, pressure and altitude using 
 | pressure      | 300...1100hPa         | &#x00B1;1,0hPa |   
    
 __Note__   
-The first value read in is usually incorrect and should not be used ;)   
+The first value read in is often incorrect and should not be used ;)   
    
 ## Hardware
 * WeMos D1 Mini
@@ -19,14 +20,20 @@ The first value read in is usually incorrect and should not be used ;)
 
 **Example for Serial output:**
 ```
-BME280 found!
-{"T":21.9,"H":0.0,"p":657.9,"a":3497.0}
-21.89 | 0.01 | 658 | 3497.0
-T=21.89*C, H=0.01%, p=657.95hPa, a=3496.99m
+setup(): --Start--
+BME280 found!        
+I2C address: 0x76    
+setup(): --Finished--
+
+Measurement started!
+New Result: {"T":24.2,"H":32.2,"p":959.7,"a":456.0}
+Old Result: 24.23 | 32.15 | 960 | 456.0
+Old Result: T=24.23*C, H=32.15%, p=959.66hPa, a=456.04m
 --------------------------------------------
-{"T":27.7,"H":23.2,"p":972.3,"a":347.0}
-27.73 | 23.17 | 972 | 347.0
-T=27.73*C, H=23.17%, p=972.27hPa, a=346.96m
+Measurement started!
+New Result: {"T":24.2,"H":32.2,"p":959.6,"a":456.5}
+Old Result: 24.24 | 32.16 | 960 | 456.5
+Old Result: T=24.24*C, H=32.16%, p=959.61hPa, a=456.52m
 --------------------------------------------
 ```
 
