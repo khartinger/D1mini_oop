@@ -1,59 +1,17 @@
-//_____D1_class_Screen_64x48.cpp______________171229-171229_____
+//_____D1_class_Screen_64x48.cpp______________171229-210202_____
 // The class Screen_64x48 contains basic OLED functions only for
 // WeMos D1 mini OLED shield 0,66" 64*48 pixel.
+// Special: char(158) = Euro instead of Pt (Pesetas) (158=9E)
 // The code is strongly based on Adafruit libs
 //   * _Adafruit_SSD1306-esp8266-64x48.zip and
 //   * Adafruit-GFX-Library-1.1.5.zip
 // Use this class, if you have problems with the Adafruit
 // classes especially after an update of the libraries.
-//
+// Created by Karl Hartinger, December 15, 2018
+// Updates:
+// 210202 begin(): Wire.begin(); deleted
+// Released into the public domain.
 #include "D1_class_Screen_64x48.h"     // basic oled functions
-
-//_____replace special chars by hex code________________________
-String utf8ToOled(String s)
-{
- String s1="";
- char c1,c2;
- int i, imax=s.length();
- Serial.print("imax=");Serial.println(imax);
- for(i=0; i<imax; i++)
- {
-  c1=s.charAt(i);
-  if(c1<128) 
-   s1=s1+String(c1);
-  else
-  {
-   c2=s.charAt(++i);
-   switch(c1)
-   {
-    case 0xc2: //-----first byte is C2--------------------------
-     switch(c2) {
-      case 0xb0: s1=s1+"\xF8"; break;  //degree sign
-      case 0xb5: s1=s1+"\xE6"; break;  //micro sign
-      case 0xaa: s1=s1+"\xA6"; break;  //feminine ordinal indicator
-      case 0xb2: s1=s1+"\xFD"; break;  //superscript 2
-      default: s1=s1+"?";
-     }
-     break;
-    case 0xc3: //-----first byte is C3--------------------------
-     switch(c2){
-      case 0x84: s1=s1+"\x8E"; break;  //A with diaeresis
-      case 0x96: s1=s1+"\x99"; break;  //O with diaeresis
-      case 0x9c: s1=s1+"\x9A"; break;  //U with diaeresis
-      case 0xa4: s1=s1+"\x84"; break;  //a with diaeresis
-      case 0xb6: s1=s1+"\x94"; break;  //o with diaeresis
-      case 0xbc: s1=s1+"\x81"; break;  //u with diaeresis
-      case 0x9f: s1=s1+"\xE1"; break;  //sharp s, beta
-      default: s1=s1+"?";
-     }
-     break;
-    default: s1=s1+"?";
-   }
-  }
- }
- return s1;
-}
-
 
 //**************************************************************
 //    class _Adafruit_SSD1306 (renamed to _Adafruit_SSD1306)
@@ -168,16 +126,16 @@ void _Adafruit_SSD1306::begin(uint8_t vccstate, uint8_t i2caddr,
  else
  {
   //.....I2C init...............................................
-  Wire.begin();
+ //Wire.begin();
  }
  
  if ((reset) && (rst >= 0)) {
   //.....Setup reset pin direction (used by both SPI and I2C)...
   pinMode(rst, OUTPUT);                // reset pin = putput
   digitalWrite(rst, HIGH);             // VDD (3.3V) goes high
-  delay(1);                            // at start, wait
+  delay(10);                           // at start, wait
   digitalWrite(rst, LOW);              // bring reset low
-  delay(10);                           // wait 10ms
+  delay(20);                           // wait 10ms
   digitalWrite(rst, HIGH);             // bring out of reset
  }
  //-----init sequence-------------------------------------------
@@ -1370,6 +1328,7 @@ size_t _Adafruit_GFX::write(uint8_t c)
    }
   }
  }
+ return 1;
 }
 
 //_____set cursor to given position_____________________________
