@@ -24,20 +24,20 @@
 #define WAIT_MEASURING_MS    500       // time between 2 measure
 #define SEALEVELPRESSURE_HPA (1013.25) // Hektopascal
 
-//-----convert 32-bit-value to float----------------------------
+//-------convert 32-bit-value to float--------------------------
 #define BME280_FT(tmp)       ((((tmp)*5+128)>>8)/100.0F)
 #define BME280_FH(hum)       (((hum)>>12)/1024.0F)
 #define BME280_FP(pre)       ((pre)/256.0F)
 #define BME280_FA(pre,sea)   (44330.0*(1.0-pow(pre/sea,0.1903)))
 
-//-----error values of measurement values-----------------------
+//-------error values of measurement values---------------------
 #define BME280_ERR_T         0x80000
 #define BME280_ERR_P         0x80000
 #define BME280_ERR_H         0x8000
 #define BME280_ERR_FLOAT     NAN
-//-----status---------------------------------------------------
+//-------status-------------------------------------------------
 #define BME280_OK            0    // success
-#define BME280_ERR_TOO_LONG  1    // i2c data too long to fit in transmit buffer 
+#define BME280_ERR_TOO_LONG  1    // i2c data too long to fit in transmit buffer
 #define BME280_ERR_NACK_ADDR 2    // i2c NACK transmit address
 #define BME280_ERR_NACK_DATA 3    // i2c NACK transmit data
 #define BME280_ERR_OTHER     4    // i2c other error
@@ -50,7 +50,7 @@
 #define BME280_ERR_RESET     12   // reset error
 #define BME280_ERR_BMP180    13   // wrong device BMP180
 
-//-----register-------------------------------------------------
+//-------register-----------------------------------------------
 #define BME280_REG_DIG_T1    0x88
 #define BME280_REG_DIG_T2    0x8A
 #define BME280_REG_DIG_T3    0x8C
@@ -87,13 +87,13 @@
 #define BME280_REG_TEMPDATA  0xFA //Temperature MSB-LSB-XLSB
 #define BME280_REG_HUMIDATA  0xFD //Humidity    MSB-LSB
 
-//-----register content-----------------------------------------
+//-------register content---------------------------------------
 #define BME280_CHIPID        0x60 //Chip ID BME280
 #define BMP280_CHIPID        0x58 //Chip ID BMP280 (no hum)
 #define BMP180_CHIPID        0x55 //Chip ID BMP180 (no hum)
 #define BME280_RESET         0xB6 //Write 0xB6 resets device
 
-//-----parts of register content--------------------------------
+//-------parts of register content------------------------------
  typedef enum {
   MODE_SLEEP  = 0b00,
   MODE_FORCED = 0b01,
@@ -117,7 +117,7 @@ typedef enum {
   FILTER_X16 = 0b100
  } bme280_filter;
 
-//-----standby durations in ms----------------------------------
+//-------standby durations in ms--------------------------------
  typedef enum {
   STANDBY_MS_0_5  = 0b000,
   STANDBY_MS_10   = 0b110,
@@ -129,7 +129,7 @@ typedef enum {
   STANDBY_MS_1000 = 0b101
  } bme280_standby;
 
-//-----structure to save calibration data-----------------------
+//-------structure to save calibration data---------------------
 typedef struct
 {
  uint16_t dig_T1;
@@ -153,11 +153,11 @@ typedef struct
 } bme280_calib;
   
 class BME280 {
- //-----properties----------------------------------------------
+ //------properties---------------------------------------------
  protected:
   int    i2cAddress;              // i2c address
   int    status;                  // state of measuring
-  bool   bNewBegin;               // true = first start
+  bool   bFirstBegin;             // true = first start
   bool   bNewResult;              // true = new measurement value
   unsigned long lastMeasuring_;   // time of last measuring [ms]
   unsigned long waitMeasuring_;   // waiting time between 2 meas
@@ -172,27 +172,20 @@ class BME280 {
   byte regCtrlMeas;               // 7-5 sampT 4-2 sampP 1-0 mode
   byte regConfig;                 // 7-5 standby 4-2 filter
     
- //-----constructor & co----------------------------------------
+ //------constructor & co---------------------------------------
  public:
   BME280();                       // default constructor
   BME280(int i2c_address);        // constructor 2
  protected:
-  void   setup();                 // start i2c, begin()
+  void   setup();                 // init properties
+ //------setter methods-----------------------------------------
  public:
-  void   setAddress(int i2c_address);
+  bool   setAddress(int i2c_address);
+  void   setWaitMeasuring(unsigned long wait_ms);
   bool   setParams(bme280_mode mode, bme280_sampling temp,
           bme280_sampling pres,bme280_sampling humi,
           bme280_filter filter, bme280_standby  standby);
-  bool   begin();                 // startI2C=true
-  bool   begin(bool startI2C);    // checkID, reset, set regs
-  bool   softReset();             // soft reset (set IIR off...)
- protected:
-  bool   checkID();               // must be 0x60 or 0x58
-  bool   isReadingCalibration();  // check for sensor is busy
-  bool   readCompensationParams(void); //sensor non-volatile mem
- //-----setter and getter methods-------------------------------
- public:
-  void   setWaitMeasuring(unsigned long wait_ms);
+ //------getter methods-----------------------------------------
   int    getAddress();            // return i2c address
   int    getID();                 // 0x60 (BME280)|0x58 (BMP280)
   String getSensorName();         // BME280 | BMP280 | Unknown 
@@ -211,14 +204,20 @@ class BME280 {
   float  getHumidity();           // humidity or BME280_ERR_FLOAT
   float  getPressure();           // pressure or BME280_ERR_FLOAT
   float  getAltitude();           // altitude or BME280_ERR_FLOAT
-  String float2String(float f, int len, int decimals);
  //------working methods----------------------------------------
- public: 
+  bool   begin();                 // startI2C=true
+  bool   begin(bool startI2C);    // checkID, reset, set regs
   bool   measuringBegin();        // start measuring
   bool   newResult();             // is new value available?
- //------helper methods-----------------------------------------
+ //------rarely used directly, public methods-------------------
   bool   measuring();             // read values from sensor
+  bool   softReset();             // soft reset (set IIR off...)
  protected:
+ //------protected helper methods-------------------------------
+  bool   checkID();               // must be 0x60 or 0x58
+  bool   isReadingCalibration();  // check for sensor is busy
+  bool   readCompensationParams(void); //sensor non-volatile mem
+  String float2String(float f, int len, int decimals);
  //------helper methods: i2c-access-----------------------------
   bool     write8(byte reg, byte value); // write 1 byte
   uint8_t  read8(byte reg);       // read 1 byte
