@@ -19,49 +19,56 @@
 #include "D1_class_BME280a.h"
 
 //**************************************************************
-//    constructor & co
+//       constructor & co
 //**************************************************************
 
-//_____constructor (default 0x5C)_______________________________
+//_______constructor (default 0x5C)_____________________________
 BME280::BME280() { i2cAddress=BME280_ADDR; setup(); }
 
-//_____constructor with i2c Address_____________________________
+//_______constructor with i2c Address___________________________
 BME280::BME280(int i2c_address) {
  if((i2c_address==0x76)||(i2c_address==0x77)) 
   i2cAddress=i2c_address; 
  setup();
 }
 
-//_____setup device BME280______________________________________
+//_______setup device BME280____________________________________
 void BME280::setup()
 {
- //Wire.begin();                    //(4,5): SDA on 4, SCL on 5
  iHum_=BME280_ERR_H;              // value on error humidity
  iPre_=BME280_ERR_P;              // value on error pressure
  iTmp_=BME280_ERR_T;              // value on error temperature
  seaLevel_hPa=SEALEVELPRESSURE_HPA;
- //-----Settings for weather monitoring (see datasheet 3.5.1)---
+ //------settings for weather monitoring (see datasheet 3.5.1)--
  regCtrlHum=SAMPLING_X1;
  regCtrlMeas=(SAMPLING_X1<<5)|(SAMPLING_X1<<2)|MODE_NORMAL; //MODE_FORCED
  regConfig=(STANDBY_MS_1000<<5)|(FILTER_OFF<<2);
- //-------------------------------------------------------------
+ //------init properties----------------------------------------
  status=BME280_ERR_NO_MEAS;       // error message
  waitMeasuring_=WAIT_MEASURING_MS;// delay between measurements
  lastMeasuring_=0;                // no last measurement time
- bNewBegin=true;                  // first start
+ bFirstBegin=true;                // first start
  bNewResult=false;                // no measurement result yet
- //begin();
 }
 
-//_____set i2c address__________________________________________
-void BME280::setAddress(int i2c_address)
+//**************************************************************
+//       setter methods
+//**************************************************************
+
+//_______set i2c address________________________________________
+bool BME280::setAddress(int i2c_address)
 {
- if((i2c_address==0x76)||(i2c_address==0x77)) 
-  i2cAddress=i2c_address; 
+ if((i2c_address!=0x76)&&(i2c_address!=0x77)) return false;
+ i2cAddress=i2c_address; 
  setup();
+ return true;
 }
 
-//_____set parameter____________________________________________
+//_______set waiting time between two measurements in ms________
+void BME280::setWaitMeasuring(unsigned long wait_ms)
+{ waitMeasuring_=wait_ms; }
+
+//_______set parameter__________________________________________
 bool BME280::setParams(bme280_mode     mode,
                        bme280_sampling temp,
                        bme280_sampling pres,
@@ -73,112 +80,18 @@ bool BME280::setParams(bme280_mode     mode,
  regConfig=(standby<<5)|(filter<<2);
  return true;
 }
-  
-//_____check sensor, start (first) measuring____________________
-bool BME280::begin() { return begin(true); }
-
-//_____check sensor, start (first) measuring____________________
-bool BME280::begin(bool startI2C) {
- bool ok=true;
- //------start I2C?---------------------------------------------
- if(startI2C) {
-  Wire.begin();                        //call Wire.begin only once
- }
- //------check sensor type and setup sensor---------------------
- if(!checkID()) return false;          //check chip id (0x60)
- softReset();                          //reset sensor, IIR off...
- readCompensationParams();             //i2c: read chip values
- //-----set measuring parameters--------------------------------
- ok &= write8(BME280_REG_CTRL_HUM, regCtrlHum);
- ok &= write8(BME280_REG_CTRL_MEAS, regCtrlMeas);
- ok &= write8(BME280_REG_CONFIG, regConfig);
- if(!ok) return false;
- //------do the first measure (if not done before)--------------
- if(bNewBegin) {
-  bNewBegin=false;
-  measuringBegin();
- }
- if(status!=BME280_OK) return false;
- return true;
-}
-
-//_____soft reset (set IIR off etc.)____________________________
-// return: true=success, false=error
-bool BME280::softReset() {
- int i;
- bool ok=write8(BME280_REG_RESET, BME280_RESET);
- if(!ok) { status=BME280_ERR_RESET; return false; }
- //-----wait while chip is still reading calibration------------
- for(i=10; i>0; i--)
- { if(isReadingCalibration()) delay(100);
-   else i=-99;
- }
- if(i==0) { status=BME280_ERR_RESET; return false; }
- status=BME280_OK;
- return true;
-}
-
-//_____check chip id (must be 0x60 or 0x58)_____________________
-// return: true = chip ID OK, false = error
-bool BME280::checkID() {
- uint8_t id=read8(BME280_REG_CHIPID);
- if(id==BME280_CHIPID) { status=BME280_OK; return true; }
- if(id==BMP280_CHIPID) { status=BME280_OK; return true; }
- if(id==BMP180_CHIPID) { status=BME280_ERR_BMP180; return false; }
- status=BME280_ERR_ID;
- return false;
-}
-
-//_____check, if sensor is busy copying cal data________________
-// return: true chip is busy
-bool BME280::isReadingCalibration() {
- uint8_t reg = read8(BME280_REG_STATUS);
- return ((reg & 1)!=0);
-}
-
-//_____read compensation parameters from sensor non-volatile mem
-bool BME280::readCompensationParams(void) {
- calib_.dig_T1 = read16_LE (BME280_REG_DIG_T1);
- calib_.dig_T2 = readS16_LE(BME280_REG_DIG_T2);
- calib_.dig_T3 = readS16_LE(BME280_REG_DIG_T3);
-
- calib_.dig_P1 = read16_LE (BME280_REG_DIG_P1);
- calib_.dig_P2 = readS16_LE(BME280_REG_DIG_P2);
- calib_.dig_P3 = readS16_LE(BME280_REG_DIG_P3);
- calib_.dig_P4 = readS16_LE(BME280_REG_DIG_P4);
- calib_.dig_P5 = readS16_LE(BME280_REG_DIG_P5);
- calib_.dig_P6 = readS16_LE(BME280_REG_DIG_P6);
- calib_.dig_P7 = readS16_LE(BME280_REG_DIG_P7);
- calib_.dig_P8 = readS16_LE(BME280_REG_DIG_P8);
- calib_.dig_P9 = readS16_LE(BME280_REG_DIG_P9);
-
- calib_.dig_H1 = read8(BME280_REG_DIG_H1);
- calib_.dig_H2 = readS16_LE(BME280_REG_DIG_H2);
- calib_.dig_H3 = read8(BME280_REG_DIG_H3);
- calib_.dig_H4 = (read8(BME280_REG_DIG_H4) << 4) 
-  | (read8(BME280_REG_DIG_H4+1) & 0xF);
- calib_.dig_H5 = (read8(BME280_REG_DIG_H5+1) << 4)
-  | (read8(BME280_REG_DIG_H5) >> 4);
- calib_.dig_H6 = (int8_t)read8(BME280_REG_DIG_H6);
- if(status!=BME280_OK) return false;
- return true;
-}
 
 //**************************************************************
-//    setter and getter methods
+//       getter methods
 //**************************************************************
 
-//_____set waiting time between two measurements in ms__________
-void BME280::setWaitMeasuring(unsigned long wait_ms)
-{ waitMeasuring_=wait_ms; }
-
-//_____return i2c address_______________________________________
+//_______return i2c address_____________________________________
 int BME280::getAddress() { return i2cAddress; }
 
-//_____get ID of sensor (0x60 BME, 0x58 BMP)____________________
+//_______get ID of sensor (0x60 BME, 0x58 BMP)__________________
 int BME280::getID() { return(read8(BME280_REG_CHIPID)); }
 
-//_____get sensor name (BME280, BMP280 or Unknown)______________
+//_______get sensor name (BME280, BMP280 or Unknown)____________
 String BME280::getSensorName()
 {
  switch(getID())
@@ -191,11 +104,11 @@ String BME280::getSensorName()
  return String("Unknown");
 }
 
-//_____system status as int_____________________________________
+//_______system status as int___________________________________
 int BME280::getStatus() { return status; }
 
-//_____system status as text string_____________________________
-String BME280::getsStatus() 
+//_______system status as text string___________________________
+String BME280::getsStatus()
 { 
  switch(status)
  {
@@ -231,7 +144,7 @@ String BME280::getsStatus()
  return String("Serious, unknown error");
 }
 
-//_____system status as german text string______________________
+//_______system status as german text string____________________
 String BME280::getsStatusGerman() 
 { 
  switch(status)
@@ -268,7 +181,7 @@ String BME280::getsStatusGerman()
  return String("Schwerwiegender, unbekannter Fehler");
 }
 
-//_____get all measured values as float_________________________
+//_______get all measured values as float_______________________
 int BME280::getValues(float &temperature,  float &humidity, 
                       float &pressure_hPa, float &altitude)
 {
@@ -291,10 +204,10 @@ int BME280::getValues(float &temperature,  float &humidity,
  return status;
 }
 
-//_____get all measured values as String separated by ,_________
+//_______get all measured values as String separated by ,_______
 String BME280::getsValues() { return getsValues(","); }
 
-//_____get all measured values as String separated by sep_______
+//_______get all measured values as String separated by sep_____
 String BME280::getsValues(String sep) {
  float t,h,p,a;
  int d1=1;
@@ -304,7 +217,7 @@ String BME280::getsValues(String sep) {
  return s1;
 }
 
-//_____get all measured values as String separated by sep_______
+//_______get all measured values as String separated by sep_____
 // dt=decimals temperature, dh=decimals humidity, ...
 String BME280::getsValues(String sep,int dt,int dh,int dp,int da)
 {
@@ -315,10 +228,10 @@ String BME280::getsValues(String sep,int dt,int dh,int dp,int da)
  return s1;
 }
 
-//_____get all measured values as JSON-Object___________________
+//_______get all measured values as JSON-Object_________________
 String BME280::getsJson() { return getsJson(1,1,1,1); }
 
-//_____get all measured values as JSON-Object___________________
+//_______get all measured values as JSON-Object_________________
 String BME280::getsJson(int dt,int dh,int dp,int da) {
  float t,h,p,a;
  getValues(t, h, p, a);
@@ -329,7 +242,7 @@ String BME280::getsJson(int dt,int dh,int dp,int da) {
  return s1;
 }
 
-//_____measure temperature and return it as float_______________
+//_______measure temperature and return it as float_____________
 // return: temperature or BME280_ERR_FLOAT (on error)
 float BME280::getTemperature()
 { 
@@ -339,7 +252,7 @@ float BME280::getTemperature()
  return BME280_FT(iTmp_);
 }
 
-//_____measure humidity and return it as float__________________
+//_______measure humidity and return it as float________________
 // return: humidity or BME280_ERR_FLOAT (on error)
 float BME280::getHumidity()
 { 
@@ -349,7 +262,7 @@ float BME280::getHumidity()
  return BME280_FH(iHum_);
 }
 
-//_____measure pressure and return it as float__________________
+//_______measure pressure and return it as float________________
 // return: pressure or BME280_ERR_FLOAT (on error)
 float BME280::getPressure()
 { 
@@ -359,7 +272,7 @@ float BME280::getPressure()
  return BME280_FP(iPre_)/100.0F;
 }
 
-//_____measure altitude and return it as float__________________
+//_______measure altitude and return it as float________________
 // return: altitude or BME280_ERR_FLOAT (on error)
 float BME280::getAltitude()
 { 
@@ -371,22 +284,59 @@ float BME280::getAltitude()
 }
 
 //**************************************************************
-//    helper functions
+//       working methods
 //**************************************************************
 
-//_____convert float to String with given decimals_______________
-String BME280::float2String(float f, int len, int decimals)
-{
- char carray[24];                           // convert helper
- String s1="";                              // help string
- if((len<0)||(len>24)||(decimals<0)) return s1;
- dtostrf(f,len,decimals,carray);            // format float l.d
- s1=String(carray);                         // array to string
- if(len<=decimals) s1.trim();               // remove blanks
- return s1;
+//_______check sensor, start I2C and first measuring____________
+bool BME280::begin() { return begin(true); }
+
+//_______check sensor, start first measuring____________________
+// set startI2C=false if I2C has already been started
+bool BME280::begin(bool startI2C) {
+ bool ok=true;
+ //------start I2C?---------------------------------------------
+ if(startI2C) {
+  Wire.begin();                        //call Wire.begin only once
+ }
+ //------check sensor type and setup sensor---------------------
+ if(!checkID()) return false;          //check chip id (0x60)
+ softReset();                          //reset sensor, IIR off..
+ readCompensationParams();             //i2c: read chip values
+ //------set measuring parameters-------------------------------
+ ok &= write8(BME280_REG_CTRL_HUM, regCtrlHum);
+ ok &= write8(BME280_REG_CTRL_MEAS, regCtrlMeas);
+ ok &= write8(BME280_REG_CONFIG, regConfig);
+ if(!ok) return false;
+ //------do the first measure (if not done before)--------------
+ if(bFirstBegin) {
+  bFirstBegin=false;
+  measuringBegin();
+ }
+ if(status!=BME280_OK) return false;
+ return true;
 }
 
-//_____read pressure, temperature and humidity from sensor______
+//_______start measuring________________________________________
+// return: true = measurement could be started
+//         false = no new measurement process could be started
+bool BME280::measuringBegin()
+{
+ bNewResult=false;
+ return measuring();
+}
+
+//_______is/are new measurement value(s) available?_____________
+// return: true = measurement finished, no new value has been 
+//         read yet
+//         false = (At least) one new value was read 
+//         or a new measuring process was started.
+bool BME280::newResult() { return bNewResult; }
+
+//**************************************************************
+//       rarely used directly, public methods
+//**************************************************************
+
+//_______read pressure, temperature and humidity from sensor____
 // v[0]..v[2] pressure, v[3]..v[5] temperature, v[6]..v[7] humi
 bool BME280::measuring()
 {
@@ -394,10 +344,10 @@ bool BME280::measuring()
  int32_t iP, iT, iH;
  int32_t v1, v2;
  int64_t p1, v3, v4;
- //-----check the delay time between two measurements-----------
+ //------check the delay time between two measurements----------
  if((millis()-lastMeasuring_) < waitMeasuring_) return false;
  lastMeasuring_=millis();
- //-----read all data (3+3+2 = 8 data bytes)--------------------
+ //------read all data (3+3+2 = 8 data bytes)-------------------
  Wire.beginTransmission(i2cAddress);
  Wire.write(BME280_REG_PRESDATA);
  status=Wire.endTransmission();
@@ -422,7 +372,7 @@ bool BME280::measuring()
  iH=(int32_t)value;
  //status=Wire.endTransmission();
  //if(status!=BME280_OK) return false;
- //-----build temperature value-----------------------------------
+ //------build temperature value----------------------------------
  if(iT!=BME280_ERR_T) //value in case temp meas. was disabled
  {
   iT >>= 4;
@@ -434,7 +384,7 @@ bool BME280::measuring()
   iTmp_ = v1 + v2;
  }
  //Serial.print("T="); Serial.print(BME280_FT(iTmp_));
- //-----build pressure value--------------------------------------
+ //------build pressure value-------------------------------------
  if(iP!=BME280_ERR_P) //value in case pressure meas. was disabled
  {
   iP >>= 4;
@@ -454,8 +404,8 @@ bool BME280::measuring()
   }
  }
  //Serial.print(", P="); Serial.print(BME280_FP(iiPre_));
- //-----build humidity value------------------------------------
- if(iH!=BME280_ERR_H) //value in case humidity meas. was disabled
+ //------build humidity value-----------------------------------
+ if(iH!=BME280_ERR_H) //value in case humidity meas was disabled
  {
   v1 = (iTmp_ - ((int32_t)76800));
   v1 = (((((iH << 14) - (((int32_t)calib_.dig_H4) << 20) -
@@ -479,31 +429,89 @@ bool BME280::measuring()
  return true;
 }
 
-//**************************************************************
-//       working methods
-//**************************************************************
-
-//_______start measuring________________________________________
-// return: true = measurement could be started
-//         false = no new measurement process could be started
-bool BME280::measuringBegin()
-{
- bNewResult=false;
- return measuring();
+//_______soft reset (set IIR off etc.)__________________________
+// return: true=success, false=error
+bool BME280::softReset() {
+ int i;
+ bool ok=write8(BME280_REG_RESET, BME280_RESET);
+ if(!ok) { status=BME280_ERR_RESET; return false; }
+ //------wait while chip is still reading calibration-----------
+ for(i=10; i>0; i--)
+ { if(isReadingCalibration()) delay(100);
+   else i=-99;
+ }
+ if(i==0) { status=BME280_ERR_RESET; return false; }
+ status=BME280_OK;
+ return true;
 }
 
-//_______is/are new measurement value(s) available?_____________
-// return: true = measurement finished, no new value has been 
-//         read yet
-//         false = (At least) one new value was read 
-//         or a new measuring process was started.
-bool BME280::newResult() { return bNewResult; }
+//**************************************************************
+//       protected helper functions
+//**************************************************************
+
+//_______check chip id (must be 0x60 or 0x58)___________________
+// return: true = chip ID OK, false = error
+bool BME280::checkID() {
+ uint8_t id=read8(BME280_REG_CHIPID);
+ if(id==BME280_CHIPID) { status=BME280_OK; return true; }
+ if(id==BMP280_CHIPID) { status=BME280_OK; return true; }
+ if(id==BMP180_CHIPID) { status=BME280_ERR_BMP180; return false; }
+ status=BME280_ERR_ID;
+ return false;
+}
+
+//_______check, if sensor is busy copying cal data______________
+// return: true chip is busy
+bool BME280::isReadingCalibration() {
+ uint8_t reg = read8(BME280_REG_STATUS);
+ return ((reg & 1)!=0);
+}
+
+//_______read compensation params from sensor non-volatile mem__
+bool BME280::readCompensationParams(void) {
+ calib_.dig_T1 = read16_LE (BME280_REG_DIG_T1);
+ calib_.dig_T2 = readS16_LE(BME280_REG_DIG_T2);
+ calib_.dig_T3 = readS16_LE(BME280_REG_DIG_T3);
+
+ calib_.dig_P1 = read16_LE (BME280_REG_DIG_P1);
+ calib_.dig_P2 = readS16_LE(BME280_REG_DIG_P2);
+ calib_.dig_P3 = readS16_LE(BME280_REG_DIG_P3);
+ calib_.dig_P4 = readS16_LE(BME280_REG_DIG_P4);
+ calib_.dig_P5 = readS16_LE(BME280_REG_DIG_P5);
+ calib_.dig_P6 = readS16_LE(BME280_REG_DIG_P6);
+ calib_.dig_P7 = readS16_LE(BME280_REG_DIG_P7);
+ calib_.dig_P8 = readS16_LE(BME280_REG_DIG_P8);
+ calib_.dig_P9 = readS16_LE(BME280_REG_DIG_P9);
+
+ calib_.dig_H1 = read8(BME280_REG_DIG_H1);
+ calib_.dig_H2 = readS16_LE(BME280_REG_DIG_H2);
+ calib_.dig_H3 = read8(BME280_REG_DIG_H3);
+ calib_.dig_H4 = (read8(BME280_REG_DIG_H4) << 4) 
+  | (read8(BME280_REG_DIG_H4+1) & 0xF);
+ calib_.dig_H5 = (read8(BME280_REG_DIG_H5+1) << 4)
+  | (read8(BME280_REG_DIG_H5) >> 4);
+ calib_.dig_H6 = (int8_t)read8(BME280_REG_DIG_H6);
+ if(status!=BME280_OK) return false;
+ return true;
+}
+
+//_______convert float to String with given decimals_____________
+String BME280::float2String(float f, int len, int decimals)
+{
+ char carray[24];                           // convert helper
+ String s1="";                              // help string
+ if((len<0)||(len>24)||(decimals<0)) return s1;
+ dtostrf(f,len,decimals,carray);            // format float l.d
+ s1=String(carray);                         // array to string
+ if(len<=decimals) s1.trim();               // remove blanks
+ return s1;
+}
 
 //**************************************************************
 //       helper methods: i2c-access
 //**************************************************************
 
-//_____i2c: write 1 byte________________________________________
+//_______i2c: write 1 byte______________________________________
 bool BME280::write8(byte reg, byte value) {
  Wire.beginTransmission(i2cAddress);
  Wire.write(reg);
@@ -513,7 +521,7 @@ bool BME280::write8(byte reg, byte value) {
  return true;
 }
 
-//_____i2c: read 1 byte_________________________________________
+//_______i2c: read 1 byte_______________________________________
 uint8_t BME280::read8(byte reg) {
  Wire.beginTransmission(i2cAddress);
  Wire.write(reg);
@@ -531,7 +539,7 @@ uint8_t BME280::read8(byte reg) {
  return value;
 }
 
-//_____i2c: read 2 byte_________________________________________
+//_______i2c: read 2 byte_______________________________________
 uint16_t BME280::read16(byte reg) {
  uint16_t value;
  Wire.beginTransmission(i2cAddress);
@@ -551,7 +559,7 @@ uint16_t BME280::read16(byte reg) {
  return value;
 }
 
-//_____i2c: read 3 byte_________________________________________
+//_______i2c: read 3 byte_______________________________________
 uint32_t BME280::read24(byte reg) {
  uint32_t value;
  Wire.beginTransmission(i2cAddress);
@@ -572,18 +580,18 @@ uint32_t BME280::read24(byte reg) {
  return value;
 }
 
-//_____i2c: read 16bit signed___________________________________
+//_______i2c: read 16bit signed_________________________________
 int16_t BME280::readS16(byte reg) {
  return (int16_t)read16(reg);
 }
 
-//_____i2c: 16bit little endian (low-hiht byte)_________________
+//_______i2c: 16bit little endian (low-hiht byte)_______________
 uint16_t BME280::read16_LE(byte reg) {
  uint16_t temp = read16(reg);
  return (temp >> 8) | (temp << 8);
 }
 
-//_____i2c: 16bit signed little endian (low-hiht byte)__________
+//_______i2c: 16bit signed little endian (low-hiht byte)________
 int16_t BME280::readS16_LE(byte reg) {
  return (int16_t)read16_LE(reg);
 }
