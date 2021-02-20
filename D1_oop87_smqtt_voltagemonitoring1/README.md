@@ -1,5 +1,5 @@
 # D1 mini: 230V voltage monitoring with MQTT message
-Sketch: D1_oop87_smqtt_voltagemonitoring1.ino, Version 2021-02-13   
+Sketch: D1_oop87_smqtt_voltagemonitoring1.ino, Version 2021-02-20   
 [--> Deutsche Version](./LIESMICH.md "Deutsche Version")   
 
 After switching on the power supply, the D1 mini sends the MQTT message `voltage/1/ret/status` with payload `1`. If the supply voltage is switched off, it sends the same message with payload `0`.   

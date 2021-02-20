@@ -1,5 +1,5 @@
 # D1 mini: 230V Spannungs&uuml;berwachung mit MQTT Meldung
-Sketch: D1_oop87_smqtt_voltagemonitoring1.ino, Version 2021-02-13   
+Sketch: D1_oop87_smqtt_voltagemonitoring1.ino, Version 2021-02-20   
 [--> English Version](./README.md "English Version")   
 
 Nach dem Einschalten der Spannungsversorgung sendet der D1 mini die MQTT-Meldung `voltage/1/ret/status` mit payload `1`. Wird die Versorgungsspannung abgeschaltet, sendet er die gleiche Meldung mit Payload `0`.   
