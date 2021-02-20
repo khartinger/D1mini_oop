@@ -159,14 +159,18 @@ void simpleSub(String sTopic, String sPayload)
 
 //_______calculate status as string_____________________________
 // uses: global variables consumer and din5V
-// return  "0" if consumer=CONSUMER_OFF=1 (din5V=0 or din5V=1)
-// return  "1" if din5V=1, consumer=CONSUMER_ON=0
-// return "-1" if din5V=0, consumer=CONSUMER_ON=0
+// return    || consumer  |
+// value     || off | on* |   * normally is consumer=on
+// ==========++=====+=====|
+// din5V = 0 || -2  |  0  |
+// din5V = 1 || -1  |  1  |
 String sCalcStatus()
 {
  int status_=0;
  if(consumer==CONSUMER_ON) {
-  if(din5V==1) status_=1; else status_=-1;
+  if(din5V==1) status_=1; else status_=0;
+ } else {
+  if(din5V==1) status_=-1; else status_=-2;
  }
  return String(status_);
 }
