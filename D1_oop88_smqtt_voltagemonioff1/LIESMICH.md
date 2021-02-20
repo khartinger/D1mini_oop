@@ -1,5 +1,5 @@
 # D1 mini: 230V Spannungs&uuml;berwachung mit Ausschaltung und MQTT Meldung
-Sketch: D1_oop88_smqtt_voltagemonioff1.ino, Version 2021-02-14   
+Sketch: D1_oop88_smqtt_voltagemonioff1.ino, Version 2021-02-20   
 [--> English Version](./README.md "English Version")   
 
 Nach dem Einschalten der Spannungsversorgung sendet der D1 mini die MQTT-Meldung `voltage/1/ret/status` mit payload `1`. Wird die Versorgungsspannung abgeschaltet, sendet er die gleiche Meldung mit Payload `0`.   
@@ -14,13 +14,13 @@ Die Versorgungsspannung wird eingeschaltet, das Relais mit dem MQTT-Befehl `mosq
 info/start voltage/1
 voltage/1/ret/status 1
 voltage/1/set/relay -1
-voltage/1/ret/relay consumer off
+voltage/1/ret/relay 1
 voltage/1/ret/status 0
 voltage/1/set/relay -1
-voltage/1/ret/relay consumer on
+voltage/1/ret/relay 0
 voltage/1/ret/status 1
 voltage/1/set/relay -1
-voltage/1/ret/relay consumer off
+voltage/1/ret/relay 1
 voltage/1/ret/status 0
 voltage/1/ret/status 0
 ```
