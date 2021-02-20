@@ -31,7 +31,7 @@ F&auml;llt die Versorgungsspannung unter 4,5V, so soll D5=0 werden. Dies passier
 Uin = 4,5V, UR2 = 1,6V -> UR1 = Uin - UR2 = 2,9V   
 Dies ergibt f&uuml;r das Verh&auml;ltnis der Widerst&auml;nde:   
 R1:R2 = 2,9:1,6 = 1,81:1   
-__Gew&auml;hlt: R2 = 10k&Omega;, R1 = 18k&Omega;__   
+__Gew&auml;hlt: R2 = 100k&Omega;, R1 = 150k&Omega;__   
 
 Der Widerstand R3 dient zur Strombegrenzung beim Einschalten (Ladestrom f&uuml;r C1):   
 __Gew&auml;hlt: Widerstand R3 = 1 &Omega;__   

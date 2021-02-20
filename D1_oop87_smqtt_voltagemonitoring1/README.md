@@ -31,7 +31,7 @@ If the supply voltage falls below 4.5V, D5=0 should be set. This happens when th
 Uin = 4.5V, UR2 = 1.6V -> UR1 = Uin - UR2 = 2.9V.   
 This gives for the ratio of the resistors   
 R1:R2 = 2.9:1.6 = 1.81:1   
-__Selected: R2 = 10k&Omega;, R1 = 18k&Omega;__   
+__Selected: R2 = 100k&Omega;, R1 = 150k&Omega;__   
 
 Resistor R3 is used to limit the current when switching on (charging current for C1):   
 __Selected: Resistor R3 = 1 &Omega;__   
