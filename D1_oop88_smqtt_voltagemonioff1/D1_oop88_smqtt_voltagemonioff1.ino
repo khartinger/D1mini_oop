@@ -1,8 +1,10 @@
-//_____D1_oop88_smqtt_voltagemonioff1.ino__________20210220_____
+//_____D1_oop88_smqtt_voltagemonioff1.ino__________20210221_____
 // After switching on the power supply, the D1 mini sends the
 // MQTT message 'voltage/1/ret/status' with payload '1'.
 // If the supply voltage is switched off, it sends the same
-//   message with payload '0'.
+//   message with payload '0' (or '2' in DEBUG mode, if the 
+//   relay was energised at the time of switch-off, i.e. 
+//   the consumer was switched off).
 // Only if power supply via USB (test phase):
 //   If supply voltage seems to be off (D5=0) and the relay is
 //   "NC" (D1=0) the same message with payload '-1' is sent.
@@ -22,17 +24,18 @@
 // 2021-02-14 First release
 // 2021-02-20 use sTopic_PUB_SUB instead of TOPIC_SUB, TOPIC_PUB
 //            split "status" into the parts din5v and consumer
+// 2021-02-21 status return value depending on debug mode
 // Released into the public domain.
 #include <Arduino.h>
 #define D1MINI          1              // ESP8266 D1mini +pro
 //#define ESP32D1         2              // ESP32 D1mini
 #include "src/simplemqtt/D1_class_SimpleMqtt.h"
 
-#define  DEBUG88        true //false //true
-#define  VERSION88      "2021-02-20 D1_oop88_smqtt_voltagemonioff1"
+#define  DEBUG88        false //true
+#define  VERSION88      "2021-02-21 D1_oop88_smqtt_voltagemonioff1"
 #define  TOPIC_BASE     "voltage/1"
-#define  TOPIC_GET      "help,version,ip,topicbase,eeprom,status,relay,consumer"
-#define  TOPIC_SET      "topicbase,eeprom,relay,consumer"
+#define  TOPIC_GET      "help,version,ip,topicbase,eeprom,status,relay,consumer,debug"
+#define  TOPIC_SET      "topicbase,eeprom,relay,consumer,debug"
 #define  TOPIC_SUB      ""
 #define  TOPIC_PUB      ""
 //-----special topic for return status message (PUB/SUB)--------
@@ -58,6 +61,7 @@ int din5V=1;                           // value of PIN_DIN_5V
 int din5VLast=-99;                     // no last value of PIN_DIN_5V
 int consumer=CONSUMER_ON;              // 0=relay consumer on
 int consumerLast=consumer;             // to detect a change
+bool debug88=DEBUG88;
 
 //_______MQTT communication_____________________________________
 //SimpleMqtt client("..ssid..", "..password..","mqttservername");
@@ -92,6 +96,8 @@ String simpleGet(String sPayload)
   return sCalcStatus();
  //-------------------------------------------------------------
  if(sPayload=="relay") return String(1-consumer);
+ //-------------------------------------------------------------
+ if(sPayload=="debug") return String(debug88);
  //-------------------------------------------------------------
  return String("");                         // wrong Get command
 }
@@ -147,6 +153,11 @@ String simpleSet(String sTopic, String sPayload)
   else return String("off");
  }
  //-------------------------------------------------------------
+ if(sTopic=="debug") { //....set debug mode.....................
+  if(sPayload=="1" || sPayload=="on") debug88=true;
+  else debug88=false;
+ }
+ //-------------------------------------------------------------
  return String("");                         // wrong set command
 }
 
@@ -159,18 +170,23 @@ void simpleSub(String sTopic, String sPayload)
 
 //_______calculate status as string_____________________________
 // uses: global variables consumer and din5V
-// return    || consumer  |
-// value     || off | on* |   * normally is consumer=on
-// ==========++=====+=====|
-// din5V = 0 || -2  |  0  |
-// din5V = 1 || -1  |  1  |
+// DEBUG-Mode   || consumer  |
+// return value || off | on* |   * normally is consumer=on
+// =============++=====+=====|     (means relay is off)
+// din5V = 0    ||  2  |  0  |
+// din5V = 1    ||  4  |  1  |
+//
+// NO DEBUG     || consumer  |
+// return value || off | on* |   * normally is consumer=on
+// =============++=====+=====|     (means relay is off)
+// din5V = 0    ||  0  |  0  |
+// din5V = 1    ||  0  |  1  |
 String sCalcStatus()
 {
- int status_=0;
- if(consumer==CONSUMER_ON) {
-  if(din5V==1) status_=1; else status_=0;
- } else {
-  if(din5V==1) status_=-1; else status_=-2;
+ int status_=din5V;
+ if(consumer==CONSUMER_OFF) {
+  status_=0;
+  if(debug88) { if(din5V==0) status_=2; else status_=4; }
  }
  return String(status_);
 }
@@ -179,7 +195,7 @@ String sCalcStatus()
 void setup() {
  //------Serial-------------------------------------------------
  Serial.begin(115200);
- if(DEBUG88) Serial.println("\nsetup(): --Start--");
+ if(debug88) Serial.println("\nsetup(): --Start--");
  //------set pin mode-------------------------------------------
  pinMode(PIN_LED, OUTPUT);                  // blue led
  pinMode(PIN_DIN_5V, INPUT);                // 5V sensor
@@ -198,10 +214,10 @@ void setup() {
  client.setRetainedIndex("get",5,true);     // 5=status
  client.setRetainedIndex("pub",0,true);     // 0=ret/status
  client.begin();                            // setup objects
- if(DEBUG88) Serial.println("setup(): topicBase="+client.getsTopicBase());
+ if(debug88) Serial.println("setup(): topicBase="+client.getsTopicBase());
  //------connect to WiFi and MQTT broker------------------------
  while(!client.connectWiFiMQTT()) {
-  if(DEBUG88) Serial.println("setup(): Connecting error");
+  if(debug88) Serial.println("setup(): Connecting error");
   for(int i=0; i<10; i++) {
    led_=1-led_;                             // invert led
    digitalWrite(PIN_LED,led_);              // switch led
@@ -210,7 +226,7 @@ void setup() {
  }
  //------finish setup-------------------------------------------
  digitalWrite(PIN_LED,LED_OFF);             // connected=led off
- if(DEBUG88) Serial.println("setup(): --Finished--\n");
+ if(debug88) Serial.println("setup(): --Finished--\n");
 }
 
 //_______LOOP___________________________________________________
@@ -219,9 +235,11 @@ void loop() {
  //------detect a 5V change or relay change via MQTT------------
  if(consumer!=consumerLast || din5V!=din5VLast)
  {
-  if(DEBUG88) Serial.printf("New status=%s\n",sCalcStatus().c_str());
+  if(debug88) Serial.printf("New status=%s\n",sCalcStatus().c_str());
   consumerLast=consumer;                    // change detected
   din5VLast=din5V;                          // change detected
+  // Make sure that consumer is immediately switched on at restart
+  if(din5V==0 && (!debug88)) consumer=CONSUMER_ON; // relay off
   digitalWrite(PIN_RELAY,consumer);         // switch relay
   client.sendPubIndex(0,sCalcStatus());     // send status 0
  }
