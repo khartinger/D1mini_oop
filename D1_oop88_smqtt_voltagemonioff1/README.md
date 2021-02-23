@@ -40,3 +40,7 @@ For the practical set-up of the voltage monitoring, you need a junction box of a
 
 ![Voltagemonitoring_box2](./images/D1_voltagemonioff1_junctionbox2.png "Voltagemonitoring in box 2") ![Voltagemonitoring_box1](./images/D1_voltagemonioff1_junctionbox1.png "Voltagemonitoring in box 1")   
 Figure 2: Installation of the voltage monitor in a junction box 75x75x40mm3_   
+
+![Wiring of the voltage monitoring](./images/Anschlussklemme_230VMonitor.png "Wiring of the voltage monitoring")   
+_Figure 3: Wiring of the voltage monitoring_   
+

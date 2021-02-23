@@ -40,3 +40,6 @@ F&uuml;r den praktischen Aufbau der Spannungs&uuml;berwachung ben&ouml;tigt man 
 
 ![Spannungs&uuml;berwachung_Dose2](./images/D1_voltagemonioff1_junctionbox2.png "Spannungs&uuml;berwachung in Dose 2") ![Spannungs&uuml;berwachung_Dose1](./images/D1_voltagemonioff1_junctionbox1.png "Spannungs&uuml;berwachung in Dose 1")   
 _Bild 2: Einbau der Spannungs&uuml;berwachung in eine Feuchtraumdose 75x75x40mm3_   
+
+![Spannungs&uuml;berwachung_Verdrahtung](./images/Anschlussklemme_230VMonitor.png "Spannungs&uuml;berwachung Verdrahtung")   
+_Bild 3: Verdrahtung der Spannungs&uuml;berwachung_   
