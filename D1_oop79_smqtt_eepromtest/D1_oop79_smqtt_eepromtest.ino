@@ -7,8 +7,21 @@
 //#define ESP32D1         2              // ESP32 D1mini
 #include "src/simplemqtt/D1_class_SimpleMqtt.h"
 
+#define TOPIC_BASE "led/1"
+#define TOPIC_GET  "?,help,version,ip"
+#define TOPIC_SET  ""
+#define TOPIC_SUB  ""
+#define TOPIC_PUB  ""
+
 //_______MQTT communication_____________________________________
 SimpleMqtt client("..ssid..", "..password..","mqttservername");
+
+void callback(char* topic, byte* payload, unsigned int length)
+{ client.callback_(topic, payload, length); }
+
+String simpleGet(String sPayload) { return String(""); }
+String simpleSet(String sTopic, String sPayload) { return String(""); }
+void   simpleSub(String sTopic, String sPayload) { }
 
 //_______SETUP__________________________________________________
 void setup() {
@@ -54,8 +67,11 @@ void setup() {
  if(s2w==s2r) Serial.print("equal --> ");
  else Serial.println("NOT equal --> ");
  Serial.println(client.getsEepromStatus(iRet));
+ Serial.println("-----eepromEraseMyData----------------------");
+ client.eepromEraseMyData();
+ Serial.println("-----eepromEraseTopicBase-------------------");
+ client.eepromEraseTopicBase();
  Serial.println("--------------------------------------------");
-
  //------setup finish-------------------------------------------
  Serial.println("setup(): --Finished--\n");
 }

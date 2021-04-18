@@ -1,10 +1,10 @@
-//_____D1_class_SimpleMqtt.h__________________200705-201219_____
-// The SimpleMqtt class is suitable for D1 mini (ESP8266) and 
-// and ESP32 D1mini and extends the PubSubClient class to make
-// MQTT easy to use.
+//_____D1_class_SimpleMqtt.h_______________201208-210418_____
+// The SimpleMqtt class is suitable for D1 mini (ESP8266)
+// and ESP32 and extends the classes PubSubClient and
+//  SimpleMqtt to make MQTT easy to use.
 // * For this purpose a "base" topic (topicbase, default is
-//   simplemqtt/default) is defined, which is extended by the
-//   following keywords:
+//   simplemqtt/default) is defined, which can be extended
+//    by the following keywords:
 // /get Request of the value specified in the payload
 //      e.g. version query:
 //      -t simplemqtt/default/get -m version
@@ -17,41 +17,52 @@
 // * Furthermore, all commands of the PubSubClient class can 
 //   still be used.
 //
-// In the user program the following string constants must be
-// defined. Type of board:
-// *  #define  D1MINI         1            // ESP8266 D1mini +pro
-// OR #define  ESP32D1        2            // ESP32 D1mini
-// Topic base and key words for get-, set, sub-, pub-action
-// (key words comma separated or empty string):
-// * TOPIC_BASE, TOPIC_GET, TOPIC_SET, TOPIC_SUB, TOPIC_PUB
-// Furthermore, the following functions must be implemented
-// in the user program:
-// * void callback(char* topic, byte* payload, unsigned int length)
-//   { client.callback_(topic, payload, length); }
-// * String simpleGet(String sPayload) { return String(""); }
-// * String simpleSet(String sTopic, String sPayload) { return String(""); }
-// * void simpleSub(String sTopic, String sPayload) { }
-// Finally, an object must be created in the user program, e.g.
-// * SimpleMqtt client("ssid", "password", "mqttservername|ip");
-// and in the loop() function the method 
-// * client.doLoop();
-// must be called, otherwise no MQTT messages are processed!
+// In the user program the following things must be implemented:
+// [1] Define the type of board (1=D1mini, 2=D1_ESP32)
+//     #define  D1MINI         1            // ESP8266 D1mini +pro
+// [2] Define the topic base
+//     #define TOPIC_BASE "simplemqtt/default"
+// [3] Define the topics the program should respond to 
+//     for set/get/sub and pub requests
+//     (key words comma separated or empty string) e.g.
+//     #define TOPIC_GET  "help,version,ip,topicbase,eeprom,led"
+//     #define TOPIC_SET  "topicbase,eeprom,led"
+//     #define TOPIC_SUB  ""
+//     #define TOPIC_PUB  ""
+// [4] Create an object that will be used in the user program
+//     SimpleMqtt client("ssid", "password", "mqttservername|ip");
+// [5] Create a callback routine for incoming messages
+//     void callback(char* topic, byte* payload, unsigned int length)
+//     { client.callback_(topic, payload, length); }
+// [6] Create functions to answer incomming MQTT requests
+//     String simpleGet(String sPayload) { return String(""); }
+//     String simpleSet(String sTopic, String sPayload) { return String(""); }
+//     void   simpleSub(String sTopic, String sPayload) { }
+// [7] Call method "doLoop()" in the main loop:
+//     client.doLoop();
+//     It MUST be called, otherwise no MQTT messages are processed!
 //
 // Note: If the PubSubClient class is registered (installed)
 //       in the IDE, the PubSubClient files in the directory
 //       src/simplemqtt should be deleted.
+// Hardware: 
+// (1) WeMos D1 mini OR D1 mini ESP32
+// Important: Class needs a MQTT-broker to connect ;)
 // Created by Karl Hartinger, December 08, 2020.
 // Changes:
 // 2020-12-16 add setLanguage (language_, SIMPLEMQTT_LANGUAGE)
 // 2020-12-19 connectMQTT(): add line 2 if(!isWiFiConnected...
 //            EEPROM: add eeprom...myData()
-// Hardware: D1 mini OR ESP32 D1mini
+// 2021-01-03 add retained functionality
+// 2021-01-10 TOPIC_MAX changed to 16
+// 2021-04-18 add virtual to doLoop(), getsLocalIP(), 
+//            constructor 6+7, replace delay(), set hostname
 // Released into the public domain.
 
 #ifndef D1_CLASS_SIMPLEMQTT_H
 #define D1_CLASS_SIMPLEMQTT_H
 #include "Arduino.h"                   // D1, ...
-#ifdef ESP8266
+#if defined(ESP8266) || defined(D1MINI)
  #include <ESP8266WiFi.h>              // network connection
 #endif
 #if defined(ESP32) || defined(ESP32D1)
@@ -67,12 +78,12 @@ void   simpleSub(String sTopic, String sPayload);
 
 //_____defines__________________________________________________
 #if !defined(DEBUG_MQTT)
- #define DEBUG_MQTT          true      // true=Serial output
+ #define DEBUG_MQTT          false // true=Serial output
 #endif
 #define SIMPLEMQTT_LANGUAGE  'e'       // e=english, d=deutsch
 #define SIMPLEMQTT_VERSION   "SimpleMqtt_Version_2020-12-17"
 #define SIMPLEMQTT_BASE      "simplemqtt/default"
-#define STARTINFO_TOPIC      "info/start"
+#define STARTINFO_TOPIC      "info/start/mqtt"
 #define STARTINFO_ALLOW      true      // send start info
 
 #define MQTT_SSID    "ssid"            // wlan name
@@ -81,7 +92,7 @@ void   simpleSub(String sTopic, String sPayload);
 #define MQTT_PORT    1883              // default mqtt port
 #define NO_IP        "xxx.xxx.xxx.xxx" // 
 
-#define  TOPIC_MAX                  12 // max. topics to sub
+#define  TOPIC_MAX                  16 // max. topics to sub
 #define  NOTHING_TODO                0 // # mqtt do nothing
 #define  MQTT_RECONNECT_MS         200 //
 #define  TIMEOUT_WIFI_CONNECT_MS  8000 // wait for WLAN
@@ -119,6 +130,7 @@ class SimpleMqtt : public PubSubClient {
   int    wifiWaitMsMax;                // WiFi waiting time connect
   int    wifiConnectingCounter;        // connectings counter
   int    wifiConnectingCounterMax;     // connectings after begin
+  bool   startinfo_allow;              // send mqtt start info
   unsigned long conState;              // connection state
   EEPROMClass *eeprom_;                // new EEPROMClass;
   unsigned long eepromSize_;           // 
@@ -142,6 +154,9 @@ class SimpleMqtt : public PubSubClient {
   String aPayloadRet[TOPIC_MAX];       // payload for ret topics
   String aPayloadSub[TOPIC_MAX];       // payload for sub topics
   String aPayloadPub[TOPIC_MAX];       // payload for pub topics
+  boolean aRetainedGet[TOPIC_MAX];     // get topics
+  boolean aRetainedSet[TOPIC_MAX];     // set topics
+  boolean aRetainedPub[TOPIC_MAX];     // pub topics
 
  //------constructor & co---------------------------------------
  public:
@@ -151,7 +166,8 @@ class SimpleMqtt : public PubSubClient {
 //SimpleMqtt(char* ssid, char* pwd, char* mqtt_server);
   SimpleMqtt(char* ssid, char* pwd, char* mqtt_server, char* topicbase);
   SimpleMqtt(String sssid, String spwd, String smqtt_server);
- 
+  SimpleMqtt(String sssid, String spwd, String smqtt_server, String topicbase);
+  SimpleMqtt(String sssid, String spwd, String smqtt_server, String topicbase, String clientname);
  protected:
   //_____initialize all properties. Called by constructor(s)____
   void   setup();                      // called by constructors
@@ -159,7 +175,7 @@ class SimpleMqtt : public PubSubClient {
  public:
   //_____init objects, read topic base from eeprom (use default on error)
   bool   begin();                      // init objects
- 
+
  //------setter and getter methods------------------------------
  public:
   //_____set language (default e=english; d=german)_____________
@@ -172,13 +188,18 @@ class SimpleMqtt : public PubSubClient {
   void   setWiFiConnectingCounter(int number);
   //_____set MQTT client name___________________________________
   void   setMQTTClientName(String sName) {sMQTTClientName=sName;};
+  //_____allow/forbit sending mqtt start info___________________
+  void   allowMQTTStartInfo(bool allow);
+
   //_____get MQTT client name___________________________________
   String getMQTTClientName() { return sMQTTClientName; };
   //_____get MQTT client state as string________________________
   String getsState();
   //_____client name of WiFi network____________________________
   String getsSSID();
-  //_____client IP address as string____________________________
+    //_____read client IP address, return it as string____________
+  virtual String getsLocalIP();
+  //_____return stored client IP as string______________________
   String getsMyIP();
   //_____get D1mini MAC address as string_______________________
   String getsMac();
@@ -200,6 +221,20 @@ class SimpleMqtt : public PubSubClient {
   int    setTopicSub(String sAllSub);
   //_____set all pub(lish)-topics as comma separated strings____
   int    setTopicPub(String sAllPub);
+  
+  //_____set all get-topics as comma separated strings__________
+  //     plus comma separated retained string (0=false, 1=true)
+  int    setTopicGet(String sAllGet, String sAllRetainedGet);
+  //_____set all set-topics as comma separated strings__________
+  //     plus comma separated retained string (0=false, 1=true)
+  int    setTopicSet(String sAllSet, String sAllRetainedSet);
+  //_____set all pub(lish)-topics as comma separated strings____
+  //     plus comma separated retained string (0=false, 1=true)
+  int    setTopicPub(String sAllPub, String sAllRetainedPub);
+  //_____set retained for index in a..Get|a..Set|a..Pub_________
+  boolean setRetainedIndex(String sType, int index, boolean bRetained);
+  //_____ret all retained flags as string_______________________
+  String getsRetainedAll();
 
  //------methods for Wifi (WLAN)--------------------------------
   //_____try to connect to WiFi, wait max. wifiWaitMsMax________
@@ -238,9 +273,9 @@ class SimpleMqtt : public PubSubClient {
  //------mqtt (main) loop control-------------------------------
  //--> One of these methods must be called  in loop() function!!
   //_____control mqtt in main loop (with reconnect)_____________
-  bool   doLoop(void);                 // calls checkMQTT();
+  virtual bool doLoop(void);           // calls checkMQTT();
   //_____control mqtt in main loop (without reconnect!)_________
-  bool   doLoop(bool tryToReconnect);  // calls checkMQTT();
+  virtual bool doLoop(bool tryToReconnect); // calls checkMQTT();
   
  //-----internal callback method--------------------------------
  //_____internal callback method________________________________
@@ -254,8 +289,11 @@ class SimpleMqtt : public PubSubClient {
   bool   changeTopicBase(String oldBase, String newBase);
   //_____prepare to send a message with topic out of aPayloadPub
   void   sendPubIndex(int index, String payload);
+  void   sendPubIndex(int index, String payload, boolean retain);
   //_____force (simulate) a get-, set-, sub- or pub-message_____
   bool   simpleMqttDo(String type, String topic, String payload);
+  //_____same as simpleMqttDo(): force (simulate) a XXX-message___
+  bool   forceXXXAnswer(String type, String topic, String payload);
 
  //------connection state---------------------------------------
   //_____is error bit set?______________________________________
@@ -286,8 +324,14 @@ class SimpleMqtt : public PubSubClient {
   int    splitString(String str, String aStr[]);
   //_____split string to array 2________________________________
   int    splitString(String str, String aStr[], String delimiter);
-  //_____split string to array 3_________________________________
+  //_____split string to array 3________________________________
   int    splitString(String str, String aStr[], String delimiter, int imax);
+  //_____split string to boolean array 1 (0=false, 1=true)______
+  int    splitString2Bool(String str, boolean bStr[]);
+  //_____split string to boolean array 2 (0=false, 1=true)______
+  int    splitString2Bool(String str, boolean bStr[], String delimiter);
+  //_____split string to boolean array 3 (0=false, 1=true)______
+  int    splitString2Bool(String str, boolean bStr[], String delimiter, int imax);
 
  //------internal methods---------------------------------------
   //_____generate get answers in array aPayloadRet[]____________

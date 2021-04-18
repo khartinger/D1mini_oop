@@ -1,10 +1,11 @@
-//_____D1_class_SimpleMqtt.cpp________________200705-201219_____
-// The SimpleMqtt class is suitable for D1 mini (ESP8266) and 
-// and ESP32 D1mini and extends the PubSubClient class to make
-// MQTT easy to use.
+//_____D1_class_SimpleMqtt.cpp_____________201208-210418_____
+// The SimpleMqtt class is suitable for D1 mini (ESP8266)
+// The SimpleMqtt class is suitable for D1 mini (ESP8266)
+// and ESP32 and extends the classes PubSubClient and
+//  SimpleMqtt to make MQTT easy to use.
 // * For this purpose a "base" topic (topicbase, default is
-//   simplemqtt/default) is defined, which is extended by the
-//   following keywords:
+//   simplemqtt/default) is defined, which can be extended
+//    by the following keywords:
 // /get Request of the value specified in the payload
 //      e.g. version query:
 //      -t simplemqtt/default/get -m version
@@ -17,35 +18,46 @@
 // * Furthermore, all commands of the PubSubClient class can 
 //   still be used.
 //
-// In the user program the following string constants must be
-// defined. Type of board:
-// *  #define  D1MINI         1            // ESP8266 D1mini +pro
-// OR #define  ESP32D1        2            // ESP32 D1mini
-// Topic base and key words for get-, set, sub-, pub-action
-// (key words comma separated or empty string):
-// * TOPIC_BASE, TOPIC_GET, TOPIC_SET, TOPIC_SUB, TOPIC_PUB
-// Furthermore, the following functions must be implemented
-// in the user program:
-// * void callback(char* topic, byte* payload, unsigned int length)
-//   { client.callback_(topic, payload, length); }
-// * String simpleGet(String sPayload) { return String(""); }
-// * String simpleSet(String sTopic, String sPayload) { return String(""); }
-// * void simpleSub(String sTopic, String sPayload) { }
-// Finally, an object must be created in the user program, e.g.
-// * SimpleMqtt client("ssid", "password", "mqttservername|ip");
-// and in the loop() function the method 
-// * client.doLoop();
-// must be called, otherwise no MQTT messages are processed!
+// In the user program the following things must be implemented:
+// [1] Define the type of board (1=D1mini, 2=D1_ESP32)
+//     #define  D1MINI         1            // ESP8266 D1mini +pro
+// [2] Define the topic base
+//     #define TOPIC_BASE "simplemqtt/default"
+// [3] Define the topics the program should respond to 
+//     for set/get/sub and pub requests
+//     (key words comma separated or empty string) e.g.
+//     #define TOPIC_GET  "help,version,ip,topicbase,eeprom,led"
+//     #define TOPIC_SET  "topicbase,eeprom,led"
+//     #define TOPIC_SUB  ""
+//     #define TOPIC_PUB  ""
+// [4] Create an object that will be used in the user program
+//     SimpleMqtt client("ssid", "password", "mqttservername|ip");
+// [5] Create a callback routine for incoming messages
+//     void callback(char* topic, byte* payload, unsigned int length)
+//     { client.callback_(topic, payload, length); }
+// [6] Create functions to answer incomming MQTT requests
+//     String simpleGet(String sPayload) { return String(""); }
+//     String simpleSet(String sTopic, String sPayload) { return String(""); }
+//     void   simpleSub(String sTopic, String sPayload) { }
+// [7] Call method "doLoop()" in the main loop:
+//     client.doLoop();
+//     It MUST be called, otherwise no MQTT messages are processed!
 //
 // Note: If the PubSubClient class is registered (installed)
 //       in the IDE, the PubSubClient files in the directory
 //       src/simplemqtt should be deleted.
+// Hardware: 
+// (1) WeMos D1 mini OR D1 mini ESP32
+// Important: Class needs a MQTT-broker to connect ;)
 // Created by Karl Hartinger, December 08, 2020.
 // Changes:
 // 2020-12-16 add setLanguage (language_, SIMPLEMQTT_LANGUAGE)
 // 2020-12-19 connectMQTT(): add line 2 if(!isWiFiConnected...
 //            EEPROM: add eeprom...myData()
-// Hardware: D1 mini OR ESP32 D1mini
+// 2021-01-03 add retained functionality
+// 2021-01-10 TOPIC_MAX changed to 16
+// 2021-04-18 add virtual to doLoop(), getsLocalIP(), 
+//            constructor 6+7, replace delay(), set hostname
 // Released into the public domain.
 
 #include "D1_class_SimpleMqtt.h"
@@ -116,6 +128,31 @@ SimpleMqtt::SimpleMqtt(String sssid, String spwd, String smqtt_server)
  setup();
 }
 
+//_______constructor 6__________________________________________
+SimpleMqtt::SimpleMqtt(String sssid, String spwd, String smqtt_server,
+ String topicbase):PubSubClient(d1miniClient)
+{
+ ssid_=sssid;
+ pass_=spwd;
+ mqtt_=smqtt_server;
+ port_=MQTT_PORT;
+ sTopicBaseDefault=String(topicbase);  // "path" of topics
+ setup();
+}
+
+//_______constructor 7__________________________________________
+SimpleMqtt::SimpleMqtt(String sssid, String spwd, String smqtt_server, 
+String topicbase, String clientname):PubSubClient(d1miniClient)
+{
+ ssid_=sssid;
+ pass_=spwd;
+ mqtt_=smqtt_server;
+ port_=MQTT_PORT;
+ sTopicBaseDefault=String(topicbase);  // "path" of topics
+ setup();
+ sMQTTClientName=clientname;
+}
+
 //_______setup (called by constructor)__________________________
 void SimpleMqtt::setup()
 {
@@ -124,6 +161,7 @@ void SimpleMqtt::setup()
  wifiConnectingCounterMax=WIFI_CONNECTING_COUNTER;
  wifiConnectingCounter=0;              // start with connectingWiFiBegin
  sMyIP=NO_IP;                          // invalid IP
+ startinfo_allow=STARTINFO_ALLOW;      // send mqtt start info
  randomSeed(micros());                 // start random numbers
  sMQTTClientName="D1_";                //
  sMQTTClientName+=String(random(0xffff), HEX);
@@ -138,6 +176,12 @@ void SimpleMqtt::setup()
  numTopicSet=0;                        // no set topics yet
  numTopicSub=0;                        // no sub topics yet
  numTopicPub=0;                        // no pub topics yet
+ //-----set all messages to retained = false--------------------
+ for(int i=0; i<TOPIC_MAX; i++) {
+  aRetainedGet[i]=false;
+  aRetainedSet[i]=false;
+  aRetainedPub[i]=false;
+ }
  eeprom_=new EEPROMClass;              // eeprom object
  begin(0);                             // sets sTopicBase
 }
@@ -157,6 +201,7 @@ bool SimpleMqtt::begin(int iSource)
   ret=false;
  }
  if(DEBUG_MQTT) Serial.printf("begin(): topic base %s (from eeprom)\n",sTopicBase.c_str());
+ //setupOta();
  return ret;
 }
 
@@ -186,6 +231,10 @@ void SimpleMqtt::setWiFiWaitingTime(int ms)
 //_______number of connectingWiFi() after connectingWiFiBegin__
 void SimpleMqtt::setWiFiConnectingCounter(int number)
 { if(number>0) wifiConnectingCounterMax=number; }
+
+  //_____allow/forbit sending mqtt start info___________________
+void SimpleMqtt::allowMQTTStartInfo(bool allow)
+{ startinfo_allow=allow; }
 
 
 //_______get MQTT client state as string________________________
@@ -224,8 +273,16 @@ String SimpleMqtt::getsState()
 //_______client name of WiFi network____________________________
 String SimpleMqtt::getsSSID() { return ssid_; }
 
-//_______client IP address as string____________________________
+//_______read client IP address, return it as string____________
+String SimpleMqtt::getsLocalIP() {
+ if(DEBUG_MQTT) Serial.println("getsLocalIP() OHNE setupOta()");
+ sMyIP=WiFi.localIP().toString();
+ return sMyIP;
+}
+
+//_______return stored client IP as string______________________
 String SimpleMqtt::getsMyIP() { return sMyIP; }
+
 
 //_______get D1mini MAC address as string_______________________
 String SimpleMqtt::getsMac()
@@ -339,6 +396,85 @@ int SimpleMqtt::setTopicPub(String sAllPub)
  return numTopicPub;
 }
 
+//_______set all get-topics as comma separated strings__________
+//       plus comma separated retained string (0=false, 1=true)
+int SimpleMqtt::setTopicGet(String sAllGet, String sAllRetainedGet)
+{
+ splitString2Bool(sAllRetainedGet, aRetainedGet);
+ numTopicGet=splitString(sAllGet, aTopicGet);
+ return numTopicGet;
+}
+
+//_______set all set-topics as comma separated strings__________
+//       plus comma separated retained string (0=false, 1=true)
+int SimpleMqtt::setTopicSet(String sAllSet, String sAllRetainedSet)
+{
+ splitString2Bool(sAllRetainedSet, aRetainedSet);
+ numTopicSet=splitString(sAllSet, aTopicSet);
+ return numTopicSet;
+}
+
+//_______set all pub(lish)-topics as comma separated strings____
+//       plus comma separated retained string (0=false, 1=true)
+int SimpleMqtt::setTopicPub(String sAllPub, String sAllRetainedPub)
+{
+ splitString2Bool(sAllRetainedPub, aRetainedPub);
+ numTopicPub=splitString(sAllPub, aTopicPub);
+ return numTopicPub;
+}
+
+//_______set retained for index in a..Get|a..Set|a..Pub_________
+boolean SimpleMqtt::setRetainedIndex(String sType, int index, boolean bRetained)
+{
+ if(sType=="get") {
+  if(index>=0 && index<numTopicGet) {
+   aRetainedGet[index]=bRetained;
+   return true;
+  }
+ }
+ if(sType=="set") {
+  if(index>=0 && index<numTopicSet) {
+   aRetainedSet[index]=bRetained;
+   return true;
+  }
+ }
+ if(sType=="pub") {
+  if(index>=0 && index<numTopicPub) {
+   aRetainedPub[index]=bRetained;
+   return true;
+  }
+ }
+ return false;
+}
+
+//_____ret all retained flags as string_______________________
+String SimpleMqtt::getsRetainedAll()
+{
+ String s1="get: ";
+ int i;
+ for(i=0; i<numTopicGet; i++)
+ {
+  if(i>0) s1+=",";
+  s1+=String(aRetainedGet[i]);
+ }
+ s1+="\nset: ";
+ for(i=0; i<numTopicSet; i++)
+ {
+  if(i>0) s1+=",";
+  s1+=String(aRetainedSet[i]);
+ }
+ s1+="\npub: ";
+ for(i=0; i<numTopicPub; i++)
+ {
+  if(i>0) s1+=",";
+  s1+=String(aRetainedPub[i]);
+ }
+ s1+="\n";
+ return s1;
+}
+
+
+
 // *************************************************************
 // methods for Wifi (WLAN)
 // *************************************************************
@@ -363,18 +499,30 @@ bool SimpleMqtt::connectingWiFiBegin()
  disconnectWiFi();
  if(isWiFiConnected()) 
  {//-----error: could not disconnect WiFi-----------------------
-  conState|=BIT_CONN_ERROR;            // set error bit
+  conState|=BIT_CONN_ERROR;                 // set error bit
   return false;
  }
- delay(20);
+ //delay(20);
+ unsigned long _millisStart_=millis();
+ while(millis()-_millisStart_<20) yield();  // wait 20ms
  if(DEBUG_MQTT) Serial.print("connectingWiFiBegin(): ");
 #if defined(ESP8266) || defined(D1MINI)
  if(DEBUG_MQTT) Serial.print("mode() OK - ");  
  WiFi.mode(WIFI_STA);                  // D1mini is station
+ WiFi.hostname(sMQTTClientName.c_str());
+ wifi_station_set_hostname(sMQTTClientName.c_str());
+#endif
+#if defined(ESP32) || defined(ESP32D1)
+ // WiFi.config(ip, gateway, subnet);  // skipp for dhcp
+ WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE); // required to set hostname properly
+ WiFi.setHostname(sMQTTClientName.c_str());
+ WiFi.mode(WIFI_STA);                  // uC is station
 #endif
  // WiFi.config(ip, gateway, subnet);  // skipp for dhcp
  //wifi_station_set_auto_connect(true);
  //wifi_station_set_hostname(sWifiHostname.c_str());
+ //WiFi.hostname(ota_hostname_.c_str());
+ //wifi_station_set_hostname(ota_hostname_.c_str());
  //-----try to connect to WiFi (access point)-------------------
  String s1=String(ssid_);              // WLAN name
  //WiFi.begin(ssid_, pass_);           // start connecting!
@@ -382,7 +530,7 @@ bool SimpleMqtt::connectingWiFiBegin()
  if(DEBUG_MQTT) Serial.println("WiFi connecting to "+s1); 
  if(isWiFiConnected()) 
  {//-----normally no such quick connection...-------------------
-  sMyIP=WiFi.localIP().toString();          // get ip
+  sMyIP=getsLocalIP();                      // get ip
  }
  else
  {//-----normal case--------------------------------------------
@@ -406,7 +554,7 @@ bool SimpleMqtt::connectingWiFi(int attempts)
  //------check connection---------------------------------------
  if(isWiFiConnected()) 
  {
-  sMyIP=WiFi.localIP().toString();          // get ip
+  sMyIP=getsLocalIP();                      // get ip
   return true;                              // connection state
  }
  //------try to connect-----------------------------------------
@@ -418,9 +566,9 @@ bool SimpleMqtt::connectingWiFi(int attempts)
  
  while(!isWiFiConnected() && (i>0))
  {
-  //nextMillis=millis()+100;
-  //while(millis()<nextMillis) yield();       // wait 100ms
-  delay(100);                             // wait 100ms
+  //delay(100);                             // wait 100ms
+  unsigned long _millisStart_=millis();
+  while(millis()-_millisStart_<100) yield();// wait 100ms
   i--;                                      // decrement counter
   if(DEBUG_MQTT){Serial.print("."); if(i%50==0) Serial.println("");}
  }
@@ -435,7 +583,7 @@ bool SimpleMqtt::connectingWiFi(int attempts)
   }
  }
  //------success WiFi new connection/reconnect-----------------
- sMyIP=WiFi.localIP().toString();           // get IP
+ sMyIP=getsLocalIP();                       // get ip
  if(DEBUG_MQTT) Serial.println("\nconnectingWiFi(): New connection to "+String(ssid_)+", IP="+sMyIP+" - OK");
  return true;                               // connection state
 }
@@ -451,7 +599,9 @@ bool SimpleMqtt::disconnectWiFi()
  {
   i--;                                      // increment trials
   WiFi.disconnect();                        // disconnect WLAN 
-  delay(50);                                // wait a litte bit
+  //delay(50);                                // wait a litte bit
+  unsigned long _millisStart_=millis();
+  while(millis()-_millisStart_<50) yield(); // wait 50ms
  }
  //------disconnected-------------------------------------------
  if(WiFi.status()==WL_DISCONNECTED) {
@@ -556,19 +706,25 @@ bool SimpleMqtt::connectMQTT()
  if(!isWiFiConnected()) return false;
  //------is client already connected to MQTT broker?------------
  if(isMQTTConnected()) return true;
+ sMyIP=WiFi.localIP().toString();
  //------(try to) connect to MQTT server (normal case)----------
  for(int i=3; i>0; i--)
  {//-----try to connect to MQTT server--------------------------
   setServer(mqtt_.c_str(), port_);
   if(PubSubClient::connect(sMQTTClientName.c_str()))
   {//----connected to MQTT server: subscribe topics-------------
+   if(DEBUG_MQTT) Serial.println("connectMQTT(): connect");
    if(!isMQTTConnected()) return false;
    iRet=changeSubscribe(sTopicBase, sTopicBase); // 
    if(iRet==0 || iRet==32)
    {//---subscribe all topics is OK-----------------------------
-    if(STARTINFO_ALLOW)
-     publish(STARTINFO_TOPIC, sTopicBase.c_str());//start message
-     if(DEBUG_MQTT) Serial.println("connectMQTT(): OK");
+    if(startinfo_allow)
+    {
+     String s1="{\"topicbase\":\"";
+     s1+=sTopicBase+"\",\"IP\":\""+sMyIP+"\"}";
+     publish(STARTINFO_TOPIC, s1.c_str());   //start message
+    }
+    if(DEBUG_MQTT) Serial.println("connectMQTT(): OK");
     return true;                       // connected!
    }
    else
@@ -577,7 +733,12 @@ bool SimpleMqtt::connectMQTT()
     PubSubClient::disconnect();        // try again
    }
   }
-  delay(MQTT_RECONNECT_MS);            // wait a little bit
+  if(DEBUG_MQTT) Serial.print("connectMQTT() failed: ");
+  if(DEBUG_MQTT) Serial.print(getsState().c_str());
+  if(DEBUG_MQTT) Serial.println(". Wait and try again...");
+  //delay(MQTT_RECONNECT_MS);            // wait a little bit
+  unsigned long _millisStart_=millis();  // wait a little bit
+  while(millis()-_millisStart_<MQTT_RECONNECT_MS) yield();
  }
  //------not connected to MQTT broker---------------------------
  if(DEBUG_MQTT) Serial.println("connectMQTT(): MQTT error!");
@@ -875,6 +1036,14 @@ bool SimpleMqtt::simpleMqttDo(String type, String topic, String payload)
  return false;
 }
 
+//_______force (simulate) a get-, set-, sub- or pub-message_____
+// same as simpleMqttDo()
+bool SimpleMqtt::forceXXXAnswer(String type, String topic, String payload)
+{
+  return simpleMqttDo(type, topic, payload);
+}
+
+
 // *************************************************************
 //     connection state
 // *************************************************************
@@ -977,8 +1146,12 @@ int SimpleMqtt::changeSubscribe(String oldTopic, String newTopic)
   {
    if(DEBUG_MQTT) Serial.printf("Could not subscribe Topics. ");
    ret|=64; // subscribe error
-   if(STARTINFO_ALLOW)
-    publish(STARTINFO_TOPIC, sTopicBase.c_str());//start message
+   if(startinfo_allow)
+   {
+    String s1="{\"pos=\":\"changeSubscribe\",\"topicbase\":\"";
+    s1+=sTopicBase+"\",\"IP\":\""+getsMyIP()+"\"}";
+    publish(STARTINFO_TOPIC, s1.c_str());   //start message
+   }
   }
  }
  else
@@ -1001,7 +1174,7 @@ void SimpleMqtt::sendRet()
    String t1=sTopicBase;
    t1+="/ret/";
    t1+=aTopicGet[i];
-   if(publish(t1.c_str(),aPayloadRet[i].c_str()))
+   if(publish(t1.c_str(),aPayloadRet[i].c_str(), aRetainedGet[i]))
     iRet&=(~(1<<i));
   }
  }
@@ -1013,7 +1186,7 @@ void SimpleMqtt::sendRet()
    String t1=sTopicBase;
    t1+="/ret/";
    t1+=aTopicSet[i];
-   if(publish(t1.c_str(),aPayloadSet[i].c_str()))
+   if(publish(t1.c_str(),aPayloadSet[i].c_str(), aRetainedSet[i]))
    {
     iRetSet&=(~(1<<i));
     iSet&=(~(1<<i));
@@ -1025,7 +1198,7 @@ void SimpleMqtt::sendRet()
  {
   if((iPub&(1<<i))>0) 
   {
-   if(publish(aTopicPub[i].c_str(),aPayloadPub[i].c_str()))
+   if(publish(aTopicPub[i].c_str(),aPayloadPub[i].c_str(), aRetainedPub[i]))
    {
     iPub&=(~(1<<i));
    }
@@ -1088,15 +1261,53 @@ int SimpleMqtt::splitString(String str, String aStr[],
  return anz;
 }
 
+//_______split string to boolean array 1 (0=false, 1=true)______
+int SimpleMqtt::splitString2Bool(String str, boolean bStr[])
+{
+ return splitString2Bool(str, bStr, ",", TOPIC_MAX);
+}
+
+//_____split string to boolean array 2 (0=false, 1=true)______
+int SimpleMqtt::splitString2Bool(String str, boolean bStr[], String delimiter)
+{
+ return splitString2Bool(str, bStr, delimiter, TOPIC_MAX);
+}
+
+//_____split string to boolean array 3 (0=false, 1=true)______
+int SimpleMqtt::splitString2Bool(String str, boolean bStr[], String delimiter, int imax)
+{
+ int anz=0;
+ int len1=delimiter.length();
+ if(len1<1) return anz; 
+ if(str.length()<1) return anz;
+ int pos1=0,pos2=-1;
+ while((pos2=str.indexOf(delimiter,pos1))>=0)
+ {
+  String s1=str.substring(pos1,pos2);
+  s1.replace(" ","");
+  //Serial.print("|"+s1);
+  bStr[anz++] = (s1=="1");                  // true or false
+  if(anz>=imax) return anz;
+  pos1=pos2+len1;
+ }
+ String s2=str.substring(pos1);
+ s2.replace(" ","");
+ //Serial.print("|"+s2);
+ bStr[anz++] = (s2=="1");                   // true or false
+ //Serial.println();
+ return anz;
+}
+
 // *************************************************************
 //     internal methods
 // *************************************************************
 
 //_______generate get answers in array aPayloadRet[]____________
 // uses  : iGet, iRet, aPayloadRet[], numTopicXXX, aTopicXXX[]
-//         XXX = Get, Set, Sub, Pub
+//         XXX = Get, Set, Sub, Pub (for help answer ;)
 // calls : external function doGetAnswer()
 // result: answers in array aPayloadRet[]
+// called by doLoop()
 void SimpleMqtt::createGetAnswer()
 {
  if(iGet>0)
@@ -1510,7 +1721,9 @@ size_t SimpleMqtt::eepromWriteBlock(char* data,
   b1=data[i];
   eeprom_->write(address+i, b1);
   eeprom_->commit();
-  delay(1);
+  //delay(1);
+  unsigned long _millisStart_=millis();
+  while(millis()-_millisStart_<1) yield(); // wait 1ms
   b2=eeprom_->read(address+i);
   if(b1==b2) numBytes++;
   if(DEBUG_MQTT) {Serial.printf("%ld=%c|",(address+i),b2); }
