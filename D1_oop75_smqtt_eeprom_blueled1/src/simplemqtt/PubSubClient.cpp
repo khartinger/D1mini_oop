@@ -122,10 +122,19 @@ boolean PubSubClient::connect(const char *id, const char *user, const char *pass
         int result = 0;
 
         if (domain != NULL) {
+//Serial.print("domain=");Serial.print(domain);
+//Serial.print(", port=");Serial.println(this->port);
             result = _client->connect(this->domain, this->port);
+
         } else {
+
+Serial.print("IP=");Serial.print(this->ip);
+Serial.print(", port=");Serial.println(this->port);
             result = _client->connect(this->ip, this->port);
         }
+Serial.print("PubSubClient::connect(): result=");
+Serial.println(result);
+
         if (result == 1) {
             nextMsgId = 1;
             // Leave room in the buffer for header and variable length field
@@ -453,7 +462,7 @@ boolean PubSubClient::beginPublish(const char* topic, unsigned int plength, bool
         // Send the header and variable length field
         uint16_t length = MQTT_MAX_HEADER_SIZE;
         length = writeString(topic,buffer,length);
-        uint16_t i;
+        //uint16_t i;
         uint8_t header = MQTTPUBLISH;
         if (retained) {
             header |= 1;

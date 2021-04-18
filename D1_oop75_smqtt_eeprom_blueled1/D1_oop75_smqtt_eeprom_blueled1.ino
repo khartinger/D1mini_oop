@@ -31,6 +31,7 @@
 // Created by Karl Hartinger, October 16, 2020.
 // Changes:
 // 2020-10-16 New
+// 2021-04-18 update class SimpleMqtt
 // Released into the public domain.
 #define D1MINI          1              // ESP8266 D1mini +pro
 //#define ESP32D1         2              // ESP32 D1mini
@@ -39,7 +40,7 @@
 #define  DEBUG75        true //false
 #define  VERSION75      "2020-10-16 D1_oop75_smqtt_eeprom_blueled1"
 #define  TOPIC_BASE     "led/1"
-#define  TOPIC_GET      "help,version,ip,topicbase,eeprom,blueled"
+#define  TOPIC_GET      "?,help,version,ip,topicbase,eeprom,blueled"
 #define  TOPIC_SET      "topicbase,eeprom,blueled"
 #define  TOPIC_SUB      ""
 #define  TOPIC_PUB      "led/3/set/blueled"
@@ -58,7 +59,7 @@ int      ledVal_=BLUELED_OFF;               // pin value
 
 //_____MQTT communication_______________________________________
 //SimpleMqtt client("..ssid..", "..password..","mqttservername");
-SimpleMqtt client("Raspi11", "12345678","10.1.1.1", TOPIC_BASE);
+SimpleMqtt client(String("Raspi11"),String("12345678"),String("10.1.1.1"),String(TOPIC_BASE));
 
 //_____MQTT: inspect all subscribed incoming messages___________
 void callback(char* topic, byte* payload, unsigned int length)
@@ -99,14 +100,15 @@ String simpleSet(String sTopic, String sPayload)
 {
  //-------------------------------------------------------------
  if(sTopic=="topicbase") {                  // new topic base?
-  int ret=client.changeTopicBase(sPayload); // change base
+  client.changeTopicBase(sPayload);         // change base
   return client.getsTopicBase();            // return new base
  }
  //-------------------------------------------------------------
  if(sTopic=="eeprom") {                     // erase eeprom?
-  if(sPayload=="0" || sPayload=="erase")    // payload OK?
+  if(sPayload=="0" || sPayload=="erase") {  // payload OK?
   if(client.eepromEraseTopicBase()) return "erased";
-  else return "not erased";                 // return answer
+  }
+  return "not erased";                 // return answer
  }
  //-------------------------------------------------------------
  if(sTopic=="blueled") {                    // switch blue led?
@@ -147,7 +149,8 @@ void setup() {
  client.setCallback(callback);              // mqtt receiver
  client.setTopics(TOPIC_GET,TOPIC_SET,TOPIC_SUB,TOPIC_PUB);
  //-----connect to WiFi and MQTT broker-------------------------
- while(!client.connectWiFiMQTT());
+ Serial.println("Waiting for aconnection to WiFi and MQTT broker...");
+ while(!client.connectWiFiMQTT()) yield();
  Serial.println("setup(): topicBase="+client.getsTopicBase());
  Serial.println("setup(): --Finished--");
 }
