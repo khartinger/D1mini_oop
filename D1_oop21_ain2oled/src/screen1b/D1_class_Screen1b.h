@@ -1,35 +1,52 @@
-//_____D1_class_Screen1.h_____________________170412-180515_____
+//_____D1_class_Screen1a.h____________________170412-210202_____
 // The class Screen1 extends the class Screen_64x48 
 // with screen methods to write text on the display. Also a
 // 5x8 pixel font is included in this file.
 //
 // Hardware: (1) WeMos D1 mini
-//           (2) OLED Shield: SSD1306, 64x48 pixel, I2C, 
-//                            default reset pin D3 = GPIO0
-//
-#ifndef D1_CLASS_SCREEN1_H
-#define D1_CLASS_SCREEN1_H
+//           (2) OLED Shield: SSD1306, 64x48 pixel, I2C
+// Created by Karl Hartinger, December 15, 2018
+// Updates: 
+//        scroll screen 4|5|6
+// 210202 change begin()
+// Released into the public domain.
+#ifndef D1_CLASS_SCREEN1A_H
+#define D1_CLASS_SCREEN1A_H
 #include "Arduino.h"                   // D3
 #include <Wire.h>                      // i2c
 #include "D1_class_Screen_64x48.h"     // Basics for Screen1
 #ifndef OLED_RESET
  #define OLED_RESET D3                 // OLED_RESET=D3=GPIO0
 #endif
-#define OLED_I2C    0x3C               // OLED i2c address
 #define DOT         String((char)249)  // . 249 or 46 or X=88
 
 class Screen1 : public _Adafruit_SSD1306 {
+ protected:
+ //-----local struct--------------------------------------------
+ struct  st_line{
+  String txt="          ";
+  char   ali='l';
+  bool   inv=false;
+ };
  //-----properties----------------------------------------------
  protected:
-  int dotCounter;
+  int i2cAddress;                      // i2c address
+  int dotCounter;                      // dot counter
+  st_line stLines[6];
  //-----constructor & co----------------------------------------
  public:
   Screen1();
   Screen1(int oled_resetpin);
  protected: 
   void setup(int pin_num);             // setup properties
- //-----simple screens: one area, 4..6 single size lines--------
+ //-----init, setter and getter methods-------------------------
  public: 
+ bool begin();                         // startI2C=true
+ bool begin(bool startI2C);            //false: I2C already started
+ bool begin(bool startI2C, int i2c_address);
+ void setAddress(int i2c_address);     // set i2c address
+ int  getAddress();                    // return i2c address
+ //-----simple screens: one area, 4..6 single size lines--------
  void screen6 (int line_, String text_);
  void screen6 (int line_, String text_, char align_);
  void screen6Clear (int line_, String text_);
@@ -96,11 +113,15 @@ class Screen1 : public _Adafruit_SSD1306 {
  void screen4B(int line_, String text_, char align_);
  void screen4BClear(int line_, String text_);
  void screen4BClear(int line_, String text_, char align_);
+ void screen4BClearAll(int line_, String text_);
+ void screen4BClearAll(int line_, String text_, char align_);
  
  void screen4Bi(int line_, String text_);
  void screen4Bi(int line_, String text_, char align_);
  void screen4BiClear(int line_, String text_);
  void screen4BiClear(int line_, String text_, char align_);
+ void screen4BiClearAll(int line_, String text_);
+ void screen4BiClearAll(int line_, String text_, char align_);
  
  //-----special screens-----------------------------------------
  void dotClear(void);                  // clear, draw border
@@ -113,11 +134,13 @@ class Screen1 : public _Adafruit_SSD1306 {
   String utf8ToOled(String s);
  
  protected:
+ void clearLines();
+ void clearLines4B();
  String mytrim(int max_, String txt_, char align);
  void scr6(int line_, String text_, char align_, bool cls_, bool invert_);
  void scr5(int line_, String text_, char align_, bool cls_, bool invert_);
  void scr4(int line_, String text_, char align_, bool cls_, bool invert_);
- void scr4B(int line_, String text_, char align_, bool cls_, bool invert_);
+ void scr4B(int line_, String text_, char align_, bool cls_, bool invert_, bool all_);
  void screen2 (int line_, String text_, char align_, bool cls_);
  void screen1 (String text_, char align_, bool cls_);
 };

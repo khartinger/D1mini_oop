@@ -1,4 +1,4 @@
-//_____D1_class_Screen_64x48.cpp______________171229-180515_____
+//_____D1_class_Screen_64x48.cpp______________171229-210202_____
 // The class Screen_64x48 contains basic OLED functions only for
 // WeMos D1 mini OLED shield 0,66" 64*48 pixel.
 // Special: char(158) = Euro instead of Pt (Pesetas) (158=9E)
@@ -7,7 +7,10 @@
 //   * Adafruit-GFX-Library-1.1.5.zip
 // Use this class, if you have problems with the Adafruit
 // classes especially after an update of the libraries.
-//
+// Created by Karl Hartinger, December 15, 2018
+// Updates:
+// 210202 begin(): Wire.begin(); deleted
+// Released into the public domain.
 #include "D1_class_Screen_64x48.h"     // basic oled functions
 
 //**************************************************************
@@ -123,16 +126,16 @@ void _Adafruit_SSD1306::begin(uint8_t vccstate, uint8_t i2caddr,
  else
  {
   //.....I2C init...............................................
-  Wire.begin();
+ //Wire.begin();
  }
  
  if ((reset) && (rst >= 0)) {
   //.....Setup reset pin direction (used by both SPI and I2C)...
   pinMode(rst, OUTPUT);                // reset pin = putput
   digitalWrite(rst, HIGH);             // VDD (3.3V) goes high
-  delay(1);                            // at start, wait
+  delay(10);                           // at start, wait
   digitalWrite(rst, LOW);              // bring reset low
-  delay(10);                           // wait 10ms
+  delay(20);                           // wait 10ms
   digitalWrite(rst, HIGH);             // bring out of reset
  }
  //-----init sequence-------------------------------------------
@@ -1325,6 +1328,7 @@ size_t _Adafruit_GFX::write(uint8_t c)
    }
   }
  }
+ return 1;
 }
 
 //_____set cursor to given position_____________________________

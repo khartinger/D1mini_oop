@@ -9,10 +9,12 @@
 //           (2) OLED Shield: SSD1306, 64x48 pixel, I2C (0x3C)
 //               SCL=D1=DGPIO5, SDA=D2=GPIO4, OLED_RESET GPIO0
 // Created by Karl Hartinger, October 10, 2017
-// Modified 2018-05-17: Use class Screen1 (NOT Ain)
-//                      Move class files to /src/...
+// Updates:
+// 2018-05-17: Use class Screen1 (NOT Ain)
+//             Move class files to /src/...
+// 2021-11-14  Use class Screen1b
 // Released into the public domain.
-#include "src/screen1/D1_class_Screen1.h"
+#include "src/screen1b/D1_class_Screen1b.h"
 #define OLED_RESET 0              // OLED_RESET=GPIO 0
 Screen1 display_;                 // display object
 const int pinAin=A0;              // analog in pin
@@ -24,11 +26,16 @@ const float ain_d=(ain_x2*ain_y1-ain_x1*ain_y2)/(ain_x2-ain_x1);
 void setup() 
 {
  Serial.begin(115200); Serial.println("");
+ //------I2C begin, init 0.66" OLED display---------------------
+ if(!display_.begin())                 // start I2C and display
+  Serial.println("I2C not started or display not found!");
+ else 
+  Serial.println("I2C, display OK");
  //-----init screen---------------------------------------------
  display_.screen112Clear(1,"Analog In", 'c');// line 1 (inverted)
  display_.screen112(2,"?",'c');             // line 2 (big)
  display_.screen112(3,"?",'c');             // line 3 (volt)
- display_.screen112(4,"V180517 KH");        // line 4 (version)
+ display_.screen112(4,"V211114 KH");        // line 4 (version)
 }
 
 //_____main loop________________________________________________
