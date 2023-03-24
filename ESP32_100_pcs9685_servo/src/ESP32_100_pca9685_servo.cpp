@@ -15,6 +15,7 @@
 //   (3) GND - GND
 //   (4) 3V3 - VCC
 // * PCA9685 Board: power supply servo: V+ - 5V, GND - GND
+// * servo to Connector 0 of PCA9685 board
 // Created by Karl Hartinger, March 23, 2023.
 // Changes:
 // 2023-03-23 New
