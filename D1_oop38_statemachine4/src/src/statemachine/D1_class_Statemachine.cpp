@@ -133,6 +133,8 @@ uint32_t Statemachine::loopEnd()
  if((duration + delayed) > stateDelay)
  {//-----state machine is delayed: dont wait, prepare next state
   delayed = duration + delayed - stateDelay;
+  //.....limit for making up the delay: 100*stateDelay..........
+  if(delayed > 100*stateDelay) delayed = 100*stateDelay;
  } else
  {//-----wait a little until the next state can be started------
   while(millis()-millisEnd < stateDelay) yield();
